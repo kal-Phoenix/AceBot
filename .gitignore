@@ -1,0 +1,8 @@
+# Environment
+.env
+credentials.json
+
+# PyCharm
+.idea/
+__pycache__/
+*.py[cod]
