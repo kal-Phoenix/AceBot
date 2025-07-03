@@ -88,7 +88,10 @@ async def handle_resources(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def handle_resource_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handles selection from the resources menu (Text Books, Teacher's Guide, Short Notes, Cheat Sheets)."""
+    """
+    Handles selection from the resources menu (Teacher's Guide, Cheat Sheets)
+    that are specifically routed here by main.py's regex.
+    """
     user = update.effective_user
     db_user = User.find(user.id)
     text = update.message.text
@@ -100,23 +103,13 @@ async def handle_resource_selection(update: Update, context: ContextTypes.DEFAUL
         return
 
     # Route to specific handlers based on resource type
-    if text == "📖 Text Books":
-        await update.message.reply_text(
-            "Select grade level for Textbooks:",
-            reply_markup=Keyboards.grades_menu("Textbooks")
-        )
-        logger.info(f"User {user.id} selected Text Books.")
-    elif text == "📚 Teacher's Guide":
+    # NOTE: "📖 Text Books" is now handled in handle_message for consistency.
+    if text == "📚 Teacher's Guide":
         await update.message.reply_text(
             "Select grade level for Teacher's Guide:",
             reply_markup=Keyboards.grades_menu("Guide")
         )
         logger.info(f"User {user.id} selected Teacher's Guide.")
-    elif text == "📝 Short Notes":
-        # This path is now redundant as handle_message will route it.
-        # Keeping it for now to avoid breaking existing logic if there are other calls.
-        await handle_short_notes(update, context)
-        logger.info(f"User {user.id} selected Short Notes.")
     elif text == "🧮 Cheat Sheets":
         await handle_cheat_sheets(update, context)
         logger.info(f"User {user.id} selected Cheat Sheets.")
@@ -124,9 +117,26 @@ async def handle_resource_selection(update: Update, context: ContextTypes.DEFAUL
         await start(update, context)  # Go back to main menu
         logger.info(f"User {user.id} navigated back to main menu from resources.")
     else:
-        # This else block will now be hit less often due to main.py filter change.
+        # This else block should ideally not be hit if main.py routing is correct.
         await update.message.reply_text("Invalid resource type selected.")
-        logger.warning(f"User {user.id} sent invalid resource type: {text}")
+        logger.warning(f"User {user.id} sent invalid resource type to handle_resource_selection: {text}")
+
+
+async def handle_text_books_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Displays the grade selection menu for Textbooks."""
+    user = update.effective_user
+    db_user = User.find(user.id)
+
+    if not db_user or not db_user.stream:
+        await start(update, context)
+        logger.warning(f"User {user.id} inconsistent state, restarting flow for textbooks menu.")
+        return
+
+    await update.message.reply_text(
+        "Select grade level for Textbooks:",
+        reply_markup=Keyboards.grades_menu("Textbooks")
+    )
+    logger.info(f"User {user.id} selected Text Books and shown grade menu.")
 
 
 async def handle_grade_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -134,6 +144,7 @@ async def handle_grade_selection(update: Update, context: ContextTypes.DEFAULT_T
     user = update.effective_user
     db_user = User.find(user.id)
     text = update.message.text
+    logger.info(f"handle_grade_selection received text: '{text}' for user {user.id}")  # DEBUG LOG
 
     if not db_user or not db_user.stream:
         await start(update, context)
@@ -148,7 +159,8 @@ async def handle_grade_selection(update: Update, context: ContextTypes.DEFAULT_T
         resource_type = "teachers_guide"
         display_name = "Teacher's Guides"
     else:
-        await update.message.reply_text("Invalid selection.")
+        # This should ideally not be hit if the MessageHandler in main.py is correct.
+        await update.message.reply_text("Invalid selection. Please choose a valid grade button.")
         logger.warning(f"User {user.id} sent invalid grade selection format: {text}")
         return
 
@@ -157,14 +169,17 @@ async def handle_grade_selection(update: Update, context: ContextTypes.DEFAULT_T
     folder_id_key = f"{db_user.stream}_grade{grade}_{resource_type}"
     folder_id = Config.DRIVE_FOLDER_IDS.get(folder_id_key)
 
-    if not folder_id:
-        await update.message.reply_text("Resources not available for this grade yet.")
-        logger.info(f"No folder ID found for {folder_id_key} for user {user.id}.")
+    if not folder_id or folder_id.startswith("YOUR_"):  # Check for placeholder IDs
+        await update.message.reply_text(
+            f"Resources not available for {display_name} Grade {grade} ({db_user.stream.capitalize()}) yet. "
+            f"Please ensure the Google Drive folder ID is configured correctly in config.py."
+        )
+        logger.info(f"No valid folder ID found or placeholder used for {folder_id_key} for user {user.id}.")
         return
 
     files = drive_service.list_files(folder_id)  # Fetch files from Google Drive
     if not files:
-        await update.message.reply_text("No resources available for this grade.")
+        await update.message.reply_text(f"No resources available for {display_name} Grade {grade}.")
         logger.info(f"No files found in folder {folder_id} for user {user.id}.")
         return
 
@@ -213,7 +228,7 @@ async def _process_notes_subject_selection(update: Update, context: ContextTypes
         "economics": "economics"
     }
 
-    subject_key = subject_map.get(subject_text)
+    subject_key = subject_map.get(subject_text.lower())  # Ensure lower case for mapping
     if not subject_key:
         await update.message.reply_text("Invalid subject selected for notes.")
         logger.warning(f"User {db_user.user_id} sent invalid notes subject: {subject_text}")
@@ -223,9 +238,12 @@ async def _process_notes_subject_selection(update: Update, context: ContextTypes
     folder_key = f"{db_user.stream}_{subject_key}_notes"
     folder_id = Config.DRIVE_FOLDER_IDS.get(folder_key)
 
-    if not folder_id:
-        await update.message.reply_text("Notes not available for this subject yet.")
-        logger.info(f"No folder ID found for {folder_key} for user {db_user.user_id}.")
+    if not folder_id or folder_id.startswith("YOUR_"):  # Check for placeholder IDs
+        await update.message.reply_text(
+            f"Notes not available for {subject_text.capitalize()} yet. "
+            f"Please ensure the Google Drive folder ID is configured correctly in config.py."
+        )
+        logger.info(f"No valid folder ID found or placeholder used for {folder_key} for user {db_user.user_id}.")
         return
 
     files = drive_service.list_files(folder_id)
@@ -292,15 +310,18 @@ async def handle_cheat_sheet_selection(update: Update, context: ContextTypes.DEF
     folder_key = f"{db_user.stream}_{folder_key_suffix}"
     folder_id = Config.DRIVE_FOLDER_IDS.get(folder_key)
 
-    if not folder_id:
-        await update.message.reply_text("Cheat sheets not available yet.")
-        logger.info(f"No folder ID found for {folder_key} for user {user.id}.")
+    if not folder_id or folder_id.startswith("YOUR_"):  # Check for placeholder IDs
+        await update.message.reply_text(
+            f"Cheat sheets not available for {text.capitalize()} yet. "
+            f"Please ensure the Google Drive folder ID is configured correctly in config.py."
+        )
+        logger.info(f"No valid folder ID found or placeholder used for {folder_key} for user {db_user.user_id}.")
         return
 
     files = drive_service.list_files(folder_id)
     if not files:
         await update.message.reply_text("No cheat sheets found.")
-        logger.info(f"No files found in folder {folder_id} for user {user.id}.")
+        logger.info(f"No files found in folder {folder_id} for user {db_user.user_id}.")
         return
 
     message = f"📚 {text.title()}:\n\n"
@@ -347,7 +368,7 @@ async def _process_quiz_subject_selection(update: Update, context: ContextTypes.
         "economics": "economics"
     }
 
-    subject_key = subject_map.get(subject_text)
+    subject_key = subject_map.get(subject_text.lower())  # Ensure lower case for mapping
     if not subject_key:
         await update.message.reply_text("Invalid subject selected for quizzes.")
         logger.warning(f"User {db_user.user_id} sent invalid quiz subject: {subject_text}")
@@ -356,9 +377,12 @@ async def _process_quiz_subject_selection(update: Update, context: ContextTypes.
     folder_key = f"{db_user.stream}_{subject_key}_quizzes"
     folder_id = Config.DRIVE_FOLDER_IDS.get(folder_key)
 
-    if not folder_id:
-        await update.message.reply_text("Quizzes not available for this subject yet.")
-        logger.info(f"No folder ID found for {folder_key} for user {db_user.user_id}.")
+    if not folder_id or folder_id.startswith("YOUR_"):  # Check for placeholder IDs
+        await update.message.reply_text(
+            f"Quizzes not available for {subject_text.capitalize()} yet. "
+            f"Please ensure the Google Drive folder ID is configured correctly in config.py."
+        )
+        logger.info(f"No valid folder ID found or placeholder used for {folder_key} for user {db_user.user_id}.")
         return
 
     files = drive_service.list_files(folder_id)
@@ -415,10 +439,12 @@ async def _process_past_exam_year_selection(update: Update, context: ContextType
     folder_key = f"{db_user.stream}_{year}_exam"
     folder_id = Config.DRIVE_FOLDER_IDS.get(folder_key)
 
-    if not folder_id:
+    if not folder_id or folder_id.startswith("YOUR_"):  # Check for placeholder IDs
         await update.message.reply_text(
-            f"Past exam for {year} not available for {db_user.stream.capitalize()} stream yet.")
-        logger.info(f"No folder ID found for {folder_key} for user {db_user.user_id}.")
+            f"Past exam for {year} not available for {db_user.stream.capitalize()} stream yet. "
+            f"Please ensure the Google Drive folder ID is configured correctly in config.py."
+        )
+        logger.info(f"No valid folder ID found or placeholder used for {folder_key} for user {db_user.user_id}.")
         return
 
     files = drive_service.list_files(folder_id)
@@ -448,9 +474,12 @@ async def handle_exam_tips(update: Update, context: ContextTypes.DEFAULT_TYPE):
     folder_key = f"{db_user.stream}_exam_tips"
     folder_id = Config.DRIVE_FOLDER_IDS.get(folder_key)
 
-    if not folder_id:
-        await update.message.reply_text(f"Exam tips not available for {db_user.stream.capitalize()} stream yet.")
-        logger.info(f"No folder ID found for {folder_key} for user {user.id}.")
+    if not folder_id or folder_id.startswith("YOUR_"):  # Check for placeholder IDs
+        await update.message.reply_text(
+            f"Exam tips not available for {db_user.stream.capitalize()} stream yet. "
+            f"Please ensure the Google Drive folder ID is configured correctly in config.py."
+        )
+        logger.info(f"No valid folder ID found or placeholder used for {folder_key} for user {user.id}.")
         return
 
     files = drive_service.list_files(folder_id)
@@ -480,9 +509,12 @@ async def handle_study_tips(update: Update, context: ContextTypes.DEFAULT_TYPE):
     folder_key = f"{db_user.stream}_study_tips"
     folder_id = Config.DRIVE_FOLDER_IDS.get(folder_key)
 
-    if not folder_id:
-        await update.message.reply_text(f"Study tips not available for {db_user.stream.capitalize()} stream yet.")
-        logger.info(f"No folder ID found for {folder_key} for user {user.id}.")
+    if not folder_id or folder_id.startswith("YOUR_"):  # Check for placeholder IDs
+        await update.message.reply_text(
+            f"Study tips not available for {db_user.stream.capitalize()} stream yet. "
+            f"Please ensure the Google Drive folder ID is configured correctly in config.py."
+        )
+        logger.info(f"No valid folder ID found or placeholder used for {folder_key} for user {user.id}.")
         return
 
     files = drive_service.list_files(folder_id)
@@ -513,6 +545,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await start(update, context)
         logger.warning(f"User {user.id} inconsistent state, restarting flow for general message.")
         return
+
+    # Define common_subjects here so it's always accessible
+    common_subjects = ["Mathematics", "English", "Physics", "Biology", "Chemistry", "Aptitude",
+                       "Geography", "History", "Economics"]
 
     # Handle main menu item selections first
     if text == MI.RESOURCES:
@@ -563,6 +599,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == MI.CONTACT_US:
         await update.message.reply_text("You can reach us at support@acebot.com 📧", reply_markup=Keyboards.main_menu())
         logger.info(f"User {user.id} requested contact info.")
+    elif text == MI.SHORT_NOTES:  # Explicitly handle Short Notes here
+        await handle_short_notes(update, context)
+        logger.info(f"User {user.id} requested short notes menu.")
+    elif text == MI.TEXT_BOOKS:  # NEW: Explicitly handle Text Books here
+        await handle_text_books_menu(update, context)
+        logger.info(f"User {user.id} requested text books menu.")
     elif text == "⬅️ Back to Main Menu":
         db_user.pending_action = None  # Clear any pending action
         db_user.save()
@@ -573,7 +615,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db_user.save()
         await handle_resources(update, context)  # Go back to resources menu
         logger.info(f"User {user.id} navigated back to resources menu.")
-    elif text == MI.EXIT_AI_CHAT:  # NEW: Handle exiting AI chat mode
+    elif text == MI.EXIT_AI_CHAT:  # Handle exiting AI chat mode
         db_user.pending_action = None  # Clear AI chat pending action
         db_user.save()
         await update.message.reply_text("👋 Exiting AI Chat. How else can I help you?",
@@ -597,8 +639,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info(f"User {user.id} processed pending action '{db_user.pending_action}' with subject '{text}'.")
     elif db_user.pending_action == "ai_chat":
         # If in AI chat mode, send message to Gemini
-        await update.message.reply_text("Thinking... 🤔", reply_markup=Keyboards.ai_chat_menu())  # Keep AI menu
-        response_text, _ = await gemini_service.chat_with_gemini(user.id, text)
+        await update.message.reply_chat_action("typing")  # This sends the "typing..." status
+        await update.message.reply_text("Typing... ✍️", reply_markup=Keyboards.ai_chat_menu())  # Keep AI menu
+        response_text = await gemini_service.chat_with_gemini(user.id, text)  # Call without history
         await update.message.reply_text(response_text, reply_markup=Keyboards.ai_chat_menu())  # Keep AI menu
         logger.info(f"User {user.id} received AI response.")
         # Keep pending_action as 'ai_chat' to continue conversation

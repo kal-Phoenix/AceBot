@@ -133,5 +133,8 @@ class MenuItems:
     UPGRADE = "💎 Upgrade"
     HELP = "🆘 Help"
     CONTACT_US = "📧 Contact Us"
-    EXIT_AI_CHAT = "⬅️ Exit AI Chat" # NEW: Button to exit AI chat mode
+    EXIT_AI_CHAT = "⬅️ Exit AI Chat"
+    # Removed CLEAR_AI_CHAT_HISTORY as per user request not to collect chat history
+    TEXT_BOOKS = "📖 Text Books"
+    SHORT_NOTES = "📝 Short Notes" # NEW: Added missing SHORT_NOTES menu item
 
