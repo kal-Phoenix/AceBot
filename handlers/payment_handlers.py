@@ -207,15 +207,21 @@ async def approve_payment_callback(update: Update, context: ContextTypes.DEFAULT
     db_user = User.find(requester_user_id)
 
     if not db_user:
-        await query.edit_message_text("User not found in database\\.", parse_mode='MarkdownV2', reply_markup=None)
+        # Edit the message to reflect that the user was not found/already processed
+        await query.edit_message_caption( # Changed from edit_message_text
+            caption=f"⚠️ Request for user ID {requester_user_id} not found or already processed.",
+            parse_mode='MarkdownV2',
+            reply_markup=None # Remove buttons
+        )
         logger.warning(f"Admin tried to approve for non-existent user: {requester_user_id}")
         return
 
     if db_user.is_premium:
-        await query.edit_message_text(
-            f"🚫 This user \\(ID\\: {requester_user_id}\\) is \\*already premium\\*\\.",
+        # Edit the message to reflect that the user is already premium
+        await query.edit_message_caption( # Changed from edit_message_text
+            caption=f"ℹ️ User {requester_user_id} is already a premium member.",
             parse_mode='MarkdownV2',
-            reply_markup=None
+            reply_markup=None # Remove buttons
         )
         logger.info(f"Admin tried to approve already premium user {requester_user_id}.")
         return
@@ -240,13 +246,12 @@ async def approve_payment_callback(update: Update, context: ContextTypes.DEFAULT
     except Exception as e:
         logger.error(f"Failed to notify user {requester_user_id} of premium approval: {e}")
 
-    # Update the admin's message
-    await query.edit_message_text(
-        f"✅ You have approved premium access for user \\(ID\\: {requester_user_id}\\) \\({db_user.full_name or 'N/A'}\\)\\.",
+    # Notify the admin by editing the caption of the original message
+    await query.edit_message_caption( # Changed from edit_message_text
+        caption=f"✅ You have approved premium access for user \\(ID\\: {requester_user_id}\\) \\({db_user.full_name or 'N/A'}\\)\\.",
         parse_mode='MarkdownV2',
         reply_markup=None  # Remove buttons after action
     )
-
 
 async def decline_payment_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
@@ -259,15 +264,21 @@ async def decline_payment_callback(update: Update, context: ContextTypes.DEFAULT
     db_user = User.find(requester_user_id)
 
     if not db_user:
-        await query.edit_message_text("User not found in database\\.", parse_mode='MarkdownV2', reply_markup=None)
+        # Edit the message to reflect that the user was not found/already processed
+        await query.edit_message_caption( # Changed from edit_message_text
+            caption=f"⚠️ Request for user ID {requester_user_id} not found or already processed.",
+            parse_mode='MarkdownV2',
+            reply_markup=None # Remove buttons
+        )
         logger.warning(f"Admin tried to decline for non-existent user: {requester_user_id}")
         return
 
     if not db_user.payment_pending and not db_user.pending_admin_approval:
-        await query.edit_message_text(
-            f"ℹ️ This request from user \\(ID\\: {requester_user_id}\\) is no longer pending or was already processed\\.",
+        # Edit the message to reflect that the request is no longer pending
+        await query.edit_message_caption( # Changed from edit_message_text
+            caption=f"ℹ️ Request for user {requester_user_id} is no longer pending.",
             parse_mode='MarkdownV2',
-            reply_markup=None
+            reply_markup=None # Remove buttons
         )
         logger.info(f"Admin tried to decline an inactive request for user {requester_user_id}.")
         return
@@ -294,13 +305,12 @@ async def decline_payment_callback(update: Update, context: ContextTypes.DEFAULT
     except Exception as e:
         logger.error(f"Failed to notify user {requester_user_id} of premium decline: {e}")
 
-    # Update the admin's message
-    await query.edit_message_text(
-        f"❌ Premium request for user {requester_user_id} has been \\*declined\\* by {query.from_user.first_name}\\.",
+    # Notify the admin by editing the caption of the original message
+    await query.edit_message_caption( # Changed from edit_message_text
+        caption=f"❌ Premium request for user {requester_user_id} has been \\*declined\\* by {query.from_user.first_name}\\.",
         parse_mode='MarkdownV2',
         reply_markup=None  # Remove buttons after action
     )
-
 
 # Import user_handlers at the end to avoid circular dependency
 from handlers import user_handlers
