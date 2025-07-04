@@ -134,7 +134,6 @@ class MenuItems:
     HELP = "🆘 Help"
     CONTACT_US = "📧 Contact Us"
     EXIT_AI_CHAT = "⬅️ Exit AI Chat"
-    # Removed CLEAR_AI_CHAT_HISTORY as per user request not to collect chat history
+    # Removed CLEAR_AI_CHAT_HISTORY as per user request
     TEXT_BOOKS = "📖 Text Books"
     SHORT_NOTES = "📝 Short Notes" # NEW: Added missing SHORT_NOTES menu item
-

@@ -602,7 +602,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == MI.SHORT_NOTES:  # Explicitly handle Short Notes here
         await handle_short_notes(update, context)
         logger.info(f"User {user.id} requested short notes menu.")
-    elif text == MI.TEXT_BOOKS:  # NEW: Explicitly handle Text Books here
+    elif text == MI.TEXT_BOOKS:  # Explicitly handle Text Books here
         await handle_text_books_menu(update, context)
         logger.info(f"User {user.id} requested text books menu.")
     elif text == "⬅️ Back to Main Menu":
@@ -638,17 +638,16 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db_user.save()
         logger.info(f"User {user.id} processed pending action '{db_user.pending_action}' with subject '{text}'.")
     elif db_user.pending_action == "ai_chat":
-        # If in AI chat mode, send message to Gemini
+        # If in AI chat mode, send message to Gemini without history
         await update.message.reply_chat_action("typing")  # This sends the "typing..." status
-        await update.message.reply_text("Typing... ✍️", reply_markup=Keyboards.ai_chat_menu())  # Keep AI menu
-        response_text = await gemini_service.chat_with_gemini(user.id, text)  # Call without history
+        # REMOVED: await update.message.reply_text("Typing... ✍️", reply_markup=Keyboards.ai_chat_menu())
+        response_text = await gemini_service.chat_with_gemini(user.id, text)
         await update.message.reply_text(response_text, reply_markup=Keyboards.ai_chat_menu())  # Keep AI menu
         logger.info(f"User {user.id} received AI response.")
-        # Keep pending_action as 'ai_chat' to continue conversation
+        # Keep pending_action as 'ai_chat' to continue conversation (each turn is fresh)
     else:
         # Default response for unrecognized messages
         await update.message.reply_text(
             "I didn't understand that. Please choose from the menu options or type a command.",
             reply_markup=Keyboards.main_menu())
         logger.info(f"User {user.id} sent unrecognized message: {text}")
-
