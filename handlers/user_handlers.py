@@ -17,6 +17,9 @@ logger = logging.getLogger(__name__)
 drive_service = GoogleDriveService()
 gemini_service = GeminiService()
 
+# Define the premium message
+PREMIUM_MESSAGE = "This feature is for premium users only. Please upgrade to access this content. Tap '💎 Upgrade' from the main menu to learn more!"
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handles the /start command. Welcomes user and prompts for stream selection or shows main menu."""
@@ -111,6 +114,12 @@ async def handle_resource_selection(update: Update, context: ContextTypes.DEFAUL
         )
         logger.info(f"User {user.id} selected Teacher's Guide.")
     elif text == "🧮 Cheat Sheets":
+        # PREMIUM CHECK for Cheat Sheets
+        if not db_user.is_premium:
+            await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())
+            logger.info(f"Non-premium user {user.id} attempted to access Cheat Sheets.")
+            return
+
         await handle_cheat_sheets(update, context)
         logger.info(f"User {user.id} selected Cheat Sheets.")
     elif text == "⬅️ Back to Main Menu":
@@ -201,6 +210,12 @@ async def handle_short_notes(update: Update, context: ContextTypes.DEFAULT_TYPE)
         logger.warning(f"User {user.id} inconsistent state, restarting flow for short notes.")
         return
 
+    # PREMIUM CHECK for Short Notes
+    if not db_user.is_premium:
+        await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())
+        logger.info(f"Non-premium user {user.id} attempted to access Short Notes.")
+        return
+
     # Set pending action to indicate that the next text message will be a subject selection for notes
     db_user.pending_action = "select_notes_subject"
     db_user.save()
@@ -215,6 +230,12 @@ async def handle_short_notes(update: Update, context: ContextTypes.DEFAULT_TYPE)
 async def _process_notes_subject_selection(update: Update, context: ContextTypes.DEFAULT_TYPE, db_user: User,
                                            subject_text: str):
     """Processes the selected subject for short notes and provides links."""
+    # PREMIUM CHECK for Short Notes (redundant if handle_short_notes already checks, but safe)
+    if not db_user.is_premium:
+        await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())
+        logger.info(f"Non-premium user {db_user.user_id} attempted to process Short Notes selection.")
+        return
+
     # Map display names to internal keys for folder IDs
     subject_map = {
         "mathematics": "math",
@@ -270,6 +291,12 @@ async def handle_cheat_sheets(update: Update, context: ContextTypes.DEFAULT_TYPE
         logger.warning(f"User {user.id} inconsistent state, restarting flow for cheat sheets.")
         return
 
+    # PREMIUM CHECK for Cheat Sheets (redundant if handle_resource_selection already checks, but safe)
+    if not db_user.is_premium:
+        await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())
+        logger.info(f"Non-premium user {user.id} attempted to access Cheat Sheets directly.")
+        return
+
     await update.message.reply_text(
         f"Select {db_user.stream.capitalize()} stream cheat sheet:",
         reply_markup=Keyboards.cheat_sheets_menu(db_user.stream)
@@ -286,6 +313,12 @@ async def handle_cheat_sheet_selection(update: Update, context: ContextTypes.DEF
     if not db_user or not db_user.stream:
         await start(update, context)
         logger.warning(f"User {user.id} inconsistent state, restarting flow for cheat sheet selection.")
+        return
+
+    # PREMIUM CHECK for Cheat Sheets
+    if not db_user.is_premium:
+        await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())
+        logger.info(f"Non-premium user {user.id} attempted to process Cheat Sheets selection.")
         return
 
     # Map display names to internal keys for folder IDs
@@ -342,6 +375,12 @@ async def handle_quizzes_menu(update: Update, context: ContextTypes.DEFAULT_TYPE
         logger.warning(f"User {user.id} inconsistent state, restarting flow for quizzes menu.")
         return
 
+    # PREMIUM CHECK for Quizzes
+    if not db_user.is_premium:
+        await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())
+        logger.info(f"Non-premium user {user.id} attempted to access Quizzes.")
+        return
+
     # Set pending action for quiz subject selection
     db_user.pending_action = "select_quiz_subject"
     db_user.save()
@@ -356,6 +395,12 @@ async def handle_quizzes_menu(update: Update, context: ContextTypes.DEFAULT_TYPE
 async def _process_quiz_subject_selection(update: Update, context: ContextTypes.DEFAULT_TYPE, db_user: User,
                                           subject_text: str):
     """Processes the selected subject for quizzes and provides links."""
+    # PREMIUM CHECK for Quizzes (redundant if handle_quizzes_menu already checks, but safe)
+    if not db_user.is_premium:
+        await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())
+        logger.info(f"Non-premium user {db_user.user_id} attempted to process Quizzes selection.")
+        return
+
     subject_map = {
         "mathematics": "math",
         "english": "english",
@@ -435,6 +480,12 @@ async def _process_past_exam_year_selection(update: Update, context: ContextType
         logger.warning(f"User {db_user.user_id} sent non-integer exam year: {year_text}")
         return
 
+    # PREMIUM CHECK for specific Past Exam Years (2014, 2015, 2016, 2017)
+    if year in [2014, 2015, 2016, 2017] and not db_user.is_premium:
+        await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())
+        logger.info(f"Non-premium user {db_user.user_id} attempted to access premium exam year {year}.")
+        return
+
     # Construct the key for Config.DRIVE_FOLDER_IDS
     folder_key = f"{db_user.stream}_{year}_exam"
     folder_id = Config.DRIVE_FOLDER_IDS.get(folder_key)
@@ -471,6 +522,12 @@ async def handle_exam_tips(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.warning(f"User {user.id} inconsistent state, restarting flow for exam tips.")
         return
 
+    # PREMIUM CHECK for Exam Tips
+    if not db_user.is_premium:
+        await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())
+        logger.info(f"Non-premium user {user.id} attempted to access Exam Tips.")
+        return
+
     folder_key = f"{db_user.stream}_exam_tips"
     folder_id = Config.DRIVE_FOLDER_IDS.get(folder_key)
 
@@ -504,6 +561,12 @@ async def handle_study_tips(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not db_user or not db_user.stream:
         await start(update, context)
         logger.warning(f"User {user.id} inconsistent state, restarting flow for study tips.")
+        return
+
+    # PREMIUM CHECK for Study Tips
+    if not db_user.is_premium:
+        await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())
+        logger.info(f"Non-premium user {user.id} attempted to access Study Tips.")
         return
 
     folder_key = f"{db_user.stream}_study_tips"
@@ -554,6 +617,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if text == MI.RESOURCES:
         await handle_resources(update, context)
     elif text == MI.QUIZZES:
+        # PREMIUM CHECK for Quizzes
+        if not db_user.is_premium:
+            await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())
+            logger.info(f"Non-premium user {user.id} attempted to access Quizzes from main menu.")
+            return
         await handle_quizzes_menu(update, context)
     elif text == MI.MOTIVATION:
         selected_speech = random.choice(SPEECHES)
@@ -570,6 +638,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(message, reply_markup=Keyboards.main_menu())
         logger.info(f"User {user.id} requested motivation.")
     elif text == MI.AI_CHAT:
+        # PREMIUM CHECK for AI Chat initiation
+        if not db_user.is_premium:
+            await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())
+            logger.info(f"Non-premium user {user.id} attempted to access AI Chat.")
+            return
+
         # Set pending action for AI chat
         db_user.pending_action = "ai_chat"
         db_user.save()
@@ -581,9 +655,19 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await handle_past_exams_menu(update, context)  # Route to new handler for past exams
         logger.info(f"User {user.id} requested past exams menu.")
     elif text == MI.EXAM_TIPS:
+        # PREMIUM CHECK for Exam Tips
+        if not db_user.is_premium:
+            await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())
+            logger.info(f"Non-premium user {user.id} attempted to access Exam Tips.")
+            return
         await handle_exam_tips(update, context)  # Route to new handler for exam tips
         logger.info(f"User {user.id} requested exam tips.")
     elif text == MI.STUDY_TIPS:
+        # PREMIUM CHECK for Study Tips
+        if not db_user.is_premium:
+            await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())
+            logger.info(f"Non-premium user {user.id} attempted to access Study Tips.")
+            return
         await handle_study_tips(update, context)  # Route to new handler for study tips
         logger.info(f"User {user.id} requested study tips.")
     elif text == MI.ASSIGNMENT_HELP:
@@ -600,6 +684,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("You can reach us at support@acebot.com 📧", reply_markup=Keyboards.main_menu())
         logger.info(f"User {user.id} requested contact info.")
     elif text == MI.SHORT_NOTES:  # Explicitly handle Short Notes here
+        # PREMIUM CHECK for Short Notes
+        if not db_user.is_premium:
+            await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())
+            logger.info(f"Non-premium user {user.id} attempted to access Short Notes from main menu.")
+            return
         await handle_short_notes(update, context)
         logger.info(f"User {user.id} requested short notes menu.")
     elif text == MI.TEXT_BOOKS:  # Explicitly handle Text Books here
@@ -629,8 +718,22 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info(f"User {user.id} processed pending action 'select_exam_year' with year '{text}'.")
     elif text in common_subjects and db_user.pending_action:
         if db_user.pending_action == "select_notes_subject":
+            # PREMIUM CHECK for Short Notes subject selection (safe, but initial check is primary)
+            if not db_user.is_premium:
+                await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())
+                logger.info(f"Non-premium user {user.id} attempted to process Short Notes subject selection.")
+                db_user.pending_action = None # Clear action
+                db_user.save()
+                return
             await _process_notes_subject_selection(update, context, db_user, text.lower())
         elif db_user.pending_action == "select_quiz_subject":
+            # PREMIUM CHECK for Quiz subject selection (safe, but initial check is primary)
+            if not db_user.is_premium:
+                await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())
+                logger.info(f"Non-premium user {user.id} attempted to process Quiz subject selection.")
+                db_user.pending_action = None # Clear action
+                db_user.save()
+                return
             await _process_quiz_subject_selection(update, context, db_user, text.lower())
 
         # Clear pending action after processing
@@ -638,6 +741,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db_user.save()
         logger.info(f"User {user.id} processed pending action '{db_user.pending_action}' with subject '{text}'.")
     elif db_user.pending_action == "ai_chat":
+        # PREMIUM CHECK for AI chat continued interaction (safe, but initial check is primary)
+        if not db_user.is_premium:
+            await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())
+            logger.info(f"Non-premium user {user.id} attempted to continue AI Chat (lost premium?).")
+            db_user.pending_action = None # Clear action
+            db_user.save()
+            return
+
         # If in AI chat mode, send message to Gemini without history
         await update.message.reply_chat_action("typing")  # This sends the "typing..." status
         response_text = await gemini_service.chat_with_gemini(user.id, text)
