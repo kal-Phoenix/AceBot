@@ -31,7 +31,7 @@ class Config:
     # Telegram User IDs for Payment Moderators (replace with actual IDs)
     # These users will receive payment verification requests and can use the /approve command.
     PAYMENT_MODERATORS = [
-        int(os.getenv("MOD_ID_1", "123456789")), # Replace with actual moderator ID
+        int(os.getenv("MOD_ID_1", "8188221245")), # Replace with actual moderator ID
         # Add more moderator IDs as needed
     ]
     if 123456789 in PAYMENT_MODERATORS:
@@ -134,6 +134,5 @@ class MenuItems:
     HELP = "🆘 Help"
     CONTACT_US = "📧 Contact Us"
     EXIT_AI_CHAT = "⬅️ Exit AI Chat"
-    # Removed CLEAR_AI_CHAT_HISTORY as per user request
     TEXT_BOOKS = "📖 Text Books"
-    SHORT_NOTES = "📝 Short Notes" # NEW: Added missing SHORT_NOTES menu item
+    SHORT_NOTES = "📝 Short Notes"

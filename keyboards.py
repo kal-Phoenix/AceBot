@@ -1,5 +1,5 @@
 # keyboards.py
-from telegram import ReplyKeyboardMarkup
+from telegram import ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
 from config import MenuItems as MI
 
 
@@ -127,3 +127,26 @@ class Keyboards:
             [MI.EXIT_AI_CHAT]
         ], resize_keyboard=True)
 
+    @staticmethod
+    def upgrade_menu(): # NEW: Menu for upgrade process
+        """
+        Generates the menu for the upgrade process, asking about payment status.
+        """
+        return ReplyKeyboardMarkup([
+            ["✅ Yes, I have paid"],
+            ["❌ No, I haven't paid yet"],
+            ["⬅️ Back to Main Menu"]
+        ], resize_keyboard=True)
+
+    @staticmethod
+    def admin_payment_approval_keyboard(user_id: int): # NEW: Inline keyboard for admin approval
+        """
+        Generates an inline keyboard for admin to approve or decline a payment request.
+        The callback data includes the user_id to identify the request.
+        """
+        return InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton("✅ Approve", callback_data=f"approve_{user_id}"),
+                InlineKeyboardButton("❌ Decline", callback_data=f"decline_{user_id}")
+            ]
+        ])

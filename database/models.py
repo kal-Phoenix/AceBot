@@ -1,3 +1,4 @@
+# database/models.py
 from datetime import datetime
 from pymongo import MongoClient
 from config import Config
@@ -11,7 +12,10 @@ class User:
     def __init__(self, user_id: int, username: str = None, stream: str = None,
                  is_premium: bool = False, payment_pending: bool = False,
                  payment_proof: str = None, created_at: datetime = None,
-                 last_active: datetime = None, pending_action: str = None, _id=None, **kwargs):
+                 last_active: datetime = None, pending_action: str = None,
+                 pending_admin_approval: bool = False, # NEW FIELD
+                 full_name: str = None, # NEW FIELD
+                 _id=None, **kwargs):
         self.user_id = user_id
         self.username = username
         self.stream = stream
@@ -21,6 +25,8 @@ class User:
         self.created_at = created_at if created_at is not None else datetime.utcnow()
         self.last_active = last_active if last_active is not None else datetime.utcnow()
         self.pending_action = pending_action
+        self.pending_admin_approval = pending_admin_approval # Initialize new field
+        self.full_name = full_name # Initialize new field
         self._id = _id
 
     def save(self):
@@ -46,6 +52,8 @@ class User:
                 payment_proof=data.get('payment_proof'),
                 created_at=data.get('created_at', datetime.utcnow()),
                 last_active=data.get('last_active', datetime.utcnow()),
-                pending_action=data.get('pending_action')
+                pending_action=data.get('pending_action'),
+                pending_admin_approval=data.get('pending_admin_approval', False), # Get new field
+                full_name=data.get('full_name') # Get new field
             )
         return None

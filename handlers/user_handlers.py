@@ -590,7 +590,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Assignment help coming soon! ✍️", reply_markup=Keyboards.main_menu())
         logger.info(f"User {user.id} requested assignment help.")
     elif text == MI.UPGRADE:
-        # This will trigger the upgrade_command handler via main.py's CommandHandler
+        # This will trigger the upgrade_command handler via main.py's MessageHandler regex
         await payment_handlers.upgrade_command(update, context)
         logger.info(f"User {user.id} requested upgrade.")
     elif text == MI.HELP:
@@ -640,11 +640,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif db_user.pending_action == "ai_chat":
         # If in AI chat mode, send message to Gemini without history
         await update.message.reply_chat_action("typing")  # This sends the "typing..." status
-        # REMOVED: await update.message.reply_text("Typing... ✍️", reply_markup=Keyboards.ai_chat_menu())
         response_text = await gemini_service.chat_with_gemini(user.id, text)
         await update.message.reply_text(response_text, reply_markup=Keyboards.ai_chat_menu())  # Keep AI menu
         logger.info(f"User {user.id} received AI response.")
         # Keep pending_action as 'ai_chat' to continue conversation (each turn is fresh)
+    # NEW: Payment related pending actions for text input
+    elif db_user.pending_action == "await_payment_status_choice":
+        await payment_handlers.handle_payment_status_choice(update, context)
+        logger.info(f"User {user.id} handled payment status choice.")
+    elif db_user.pending_action == "await_name_for_payment":
+        await payment_handlers.process_name_for_payment(update, context)
+        logger.info(f"User {user.id} processed name for payment.")
     else:
         # Default response for unrecognized messages
         await update.message.reply_text(
