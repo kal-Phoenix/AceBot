@@ -11,7 +11,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-
 def main():
     persistence = PicklePersistence(filepath="bot_data.pickle")
 
@@ -24,7 +23,8 @@ def main():
     application.add_handler(
         MessageHandler(filters.Regex(f"^{MenuItems.RESOURCES}$"), resource_handlers.handle_resources))
 
-    application.add_handler(MessageHandler(filters.Regex(r"^(📚|🧮)"), resource_handlers.handle_resource_selection))
+    application.add_handler(
+        MessageHandler(filters.Regex(r"^(📚 Teacher's Guide|🧮 Cheat Sheets)$"), resource_handlers.handle_resource_selection))
 
     application.add_handler(
         MessageHandler(filters.Regex(r"^Grade (9|10|11|12) (Textbooks|Guide)$"),
@@ -56,7 +56,6 @@ def main():
     logger.info("Bot is running with updated features!")
 
     application.run_polling(allowed_updates=Update.ALL_TYPES)
-
 
 if __name__ == "__main__":
     main()

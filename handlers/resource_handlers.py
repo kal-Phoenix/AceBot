@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 drive_service = GoogleDriveService()
 PREMIUM_MESSAGE = "This feature is for premium users only. Please upgrade to access this content. Tap '💎 Upgrade' from the main menu to learn more!"
 
-
 async def handle_resources(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Displays the resources menu."""
     await update.message.reply_text(
@@ -20,7 +19,6 @@ async def handle_resources(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=Keyboards.resources_menu()
     )
     logger.info(f"User {update.effective_user.id} shown resources menu.")
-
 
 async def handle_resource_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
@@ -62,7 +60,6 @@ async def handle_resource_selection(update: Update, context: ContextTypes.DEFAUL
         await update.message.reply_text("Invalid resource type selected.")
         logger.warning(f"User {user.id} sent invalid resource type to handle_resource_selection: {text}")
 
-
 async def handle_text_books_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Displays the grade selection menu for Textbooks."""
     user = update.effective_user
@@ -78,7 +75,6 @@ async def handle_text_books_menu(update: Update, context: ContextTypes.DEFAULT_T
         reply_markup=Keyboards.grades_menu("Textbooks")
     )
     logger.info(f"User {user.id} selected Text Books and shown grade menu.")
-
 
 async def handle_grade_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handles selection of a specific grade level for textbooks or guides."""
@@ -131,7 +127,6 @@ async def handle_grade_selection(update: Update, context: ContextTypes.DEFAULT_T
     await update.message.reply_text(message, reply_markup=Keyboards.resources_menu())
     logger.info(f"User {user.id} received {display_name} for Grade {grade}.")
 
-
 async def handle_short_notes(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Prompts the user to select a subject for short notes."""
     user = update.effective_user
@@ -157,7 +152,6 @@ async def handle_short_notes(update: Update, context: ContextTypes.DEFAULT_TYPE)
         f"Select subject for {db_user.stream.capitalize()} stream notes:",
         reply_markup=Keyboards.subjects_menu(db_user.stream)
     )
-
 
 async def _process_notes_subject_selection(update: Update, context: ContextTypes.DEFAULT_TYPE, db_user: User,
                                            subject_text: str):
@@ -212,7 +206,6 @@ async def _process_notes_subject_selection(update: Update, context: ContextTypes
     await update.message.reply_text(message, reply_markup=Keyboards.resources_menu())
     logger.info(f"User {db_user.user_id} received notes for {subject_text}.")
 
-
 async def handle_cheat_sheets(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Prompts the user to select a cheat sheet type."""
     user = update.effective_user
@@ -235,12 +228,11 @@ async def handle_cheat_sheets(update: Update, context: ContextTypes.DEFAULT_TYPE
     )
     logger.info(f"User {user.id} shown cheat sheets menu.")
 
-
 async def handle_cheat_sheet_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Processes the selected cheat sheet type and provides links."""
     user = update.effective_user
     db_user = User.find(user.id)
-    text = update.message.text.lower()
+    text = update.message.text
 
     if not db_user or not db_user.stream:
         await user_handlers.start(update, context)
@@ -253,19 +245,20 @@ async def handle_cheat_sheet_selection(update: Update, context: ContextTypes.DEF
         logger.info(f"Non-premium user {user.id} attempted to process Cheat Sheets selection.")
         return
 
-    # Map display names to internal keys for folder IDs
+    # Map display names (with emojis) to internal keys for folder IDs
     subject_map = {
-        "math formulas": "math_cheats",
-        "english tips": "english_cheats",
-        "physics formulas": "physics_cheats",
-        "biology cheats": "biology_cheats",
-        "chemistry cheats": "chemistry_cheats",
-        "aptitude tricks": "aptitude_cheats",
-        "geography cheats": "geography_cheats",
-        "history cheats": "history_cheats",
-        "economics cheats": "economics_cheats"
+        "🧮 Math Formulas": "math_cheats",
+        "📝 English Tips": "english_cheats",
+        "⚛ Physics Formulas": "physics_cheats",
+        "🧬 Biology Cheats": "biology_cheats",
+        "🧪 Chemistry Cheats": "chemistry_cheats",
+        "🧠 Aptitude Tricks": "aptitude_cheats",
+        "🗺 Geography Cheats": "geography_cheats",
+        "📜 History Cheats": "history_cheats",
+        "💹 Economics Cheats": "economics_cheats"
     }
 
+    # Get the folder key suffix based on the exact input text
     folder_key_suffix = subject_map.get(text)
     if not folder_key_suffix:
         await update.message.reply_text("Invalid cheat sheet selection.")
@@ -277,7 +270,7 @@ async def handle_cheat_sheet_selection(update: Update, context: ContextTypes.DEF
 
     if not folder_id or folder_id.startswith("YOUR_"):  # Check for placeholder IDs
         await update.message.reply_text(
-            f"Cheat sheets not available for {text.capitalize()} yet. "
+            f"Cheat sheets not available for {text.replace('🧮 ', '').replace('📝 ', '').replace('⚛ ', '').replace('🧬 ', '').replace('🧪 ', '').replace('🧠 ', '').replace('🗺 ', '').replace('📜 ', '').replace('💹 ', '')} yet. "
             f"Please ensure the Google Drive folder ID is configured correctly in config.py."
         )
         logger.info(f"No valid folder ID found or placeholder used for {folder_key} for user {db_user.user_id}.")
@@ -289,9 +282,11 @@ async def handle_cheat_sheet_selection(update: Update, context: ContextTypes.DEF
         logger.info(f"No files found in folder {folder_id} for user {db_user.user_id}.")
         return
 
-    message = f"📚 {text.title()}:\n\n"
+    # Extract the display name by removing the emoji prefix
+    display_name = text.replace('🧮 ', '').replace('📝 ', '').replace('⚛ ', '').replace('🧬 ', '').replace('🧪 ', '').replace('🧠 ', '').replace('🗺 ', '').replace('📜 ', '').replace('💹 ', '')
+    message = f"📚 {display_name}:\n\n"
     for file in files:
         message += f"📄 {file['name']}\n🔗 {file['webViewLink']}\n\n"
 
     await update.message.reply_text(message, reply_markup=Keyboards.resources_menu())
-    logger.info(f"User {user.id} received cheat sheets for {text}.")
+    logger.info(f"User {user.id} received cheat sheets for {display_name}.")
