@@ -1,6 +1,7 @@
+# main.py
 import logging
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, PicklePersistence, CallbackQueryHandler
-from handlers import user_handlers, payment_handlers
+from handlers import user_handlers, payment_handlers, resource_handlers, content_handlers
 from config import Config, MenuItems
 from telegram import Update
 
@@ -19,19 +20,23 @@ def main():
 
     application.add_handler(MessageHandler(filters.Regex(r"^(Natural|Social)$"), user_handlers.handle_stream_selection))
 
-    application.add_handler(MessageHandler(filters.Regex(MenuItems.RESOURCES), user_handlers.handle_resources))
+    # Updated to point to resource_handlers
+    application.add_handler(MessageHandler(filters.Regex(MenuItems.RESOURCES), resource_handlers.handle_resources))
 
-    application.add_handler(MessageHandler(filters.Regex(r"^(📚|🧮)"), user_handlers.handle_resource_selection))
+    # Updated to point to resource_handlers
+    application.add_handler(MessageHandler(filters.Regex(r"^(📚|🧮)"), resource_handlers.handle_resource_selection))
 
+    # Updated to point to resource_handlers
     application.add_handler(
-        MessageHandler(filters.Regex(r"^Grade (9|10|11|12) (Textbooks|Guide)$"), user_handlers.handle_grade_selection)
+        MessageHandler(filters.Regex(r"^Grade (9|10|11|12) (Textbooks|Guide)$"), resource_handlers.handle_grade_selection)
     )
 
+    # Updated to point to resource_handlers
     application.add_handler(
         MessageHandler(filters.Regex(r"^(🧮 Math Formulas|📝 English Tips|⚛ Physics Formulas|"
                                       r"🧬 Biology Cheats|🧪 Chemistry Cheats|🧠 Aptitude Tricks|"
                                       r"🗺 Geography Cheats|📜 History Cheats|💹 Economics Cheats)$"),
-                       user_handlers.handle_cheat_sheet_selection)
+                       resource_handlers.handle_cheat_sheet_selection)
     )
 
     application.add_handler(MessageHandler(filters.Regex(MenuItems.UPGRADE), payment_handlers.upgrade_command))
