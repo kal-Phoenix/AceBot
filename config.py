@@ -133,6 +133,7 @@ class MenuItems:
     UPGRADE = "💎 Upgrade"
     HELP = "🆘 Help"
     CONTACT_US = "📧 Contact Us"
+    INVITE_AND_EARN = "🤝 Invite and Earn"
     EXIT_AI_CHAT = "⬅️ Exit AI Chat"
     TEXT_BOOKS = "📖 Text Books"
     SHORT_NOTES = "📝 Short Notes"

@@ -207,24 +207,45 @@ async def approve_payment_callback(update: Update, context: ContextTypes.DEFAULT
     db_user = User.find(requester_user_id)
 
     if not db_user:
-        # Edit the message to reflect that the user was not found/already processed
-        await query.edit_message_caption( # Changed from edit_message_text
+        await query.edit_message_caption(
             caption=f"⚠️ Request for user ID {requester_user_id} not found or already processed.",
             parse_mode='MarkdownV2',
-            reply_markup=None # Remove buttons
+            reply_markup=None
         )
         logger.warning(f"Admin tried to approve for non-existent user: {requester_user_id}")
         return
 
     if db_user.is_premium:
-        # Edit the message to reflect that the user is already premium
-        await query.edit_message_caption( # Changed from edit_message_text
+        await query.edit_message_caption(
             caption=f"ℹ️ User {requester_user_id} is already a premium member.",
             parse_mode='MarkdownV2',
-            reply_markup=None # Remove buttons
+            reply_markup=None
         )
         logger.info(f"Admin tried to approve already premium user {requester_user_id}.")
         return
+
+    # --- ADD THIS BLOCK TO PROCESS REFERRAL EARNINGS ---
+    if db_user.referred_by and not db_user.referral_credited:
+        referrer = User.find(db_user.referred_by)
+        if referrer:
+            referrer.referral_balance += 50.0
+            referrer.referral_count += 1
+            referrer.save()
+            logger.info(f"User {referrer.user_id} earned 50 ETB for referring {requester_user_id}.")
+
+            # Notify the referrer
+            try:
+                await context.bot.send_message(
+                    chat_id=referrer.user_id,
+                    text=f"🎉 Congratulations\\! A user you invited has upgraded to premium\\. You've earned *50 ETB*\\.\nYour new balance is *{referrer.referral_balance:.2f} ETB*\\.",
+                    parse_mode='MarkdownV2'
+                )
+            except Exception as e:
+                logger.error(f"Failed to send referral bonus notification to {referrer.user_id}: {e}")
+
+        # Mark the referral as credited to prevent double payment
+        db_user.referral_credited = True
+    # --- END OF BLOCK ---
 
     db_user.is_premium = True
     db_user.payment_pending = False
@@ -246,39 +267,37 @@ async def approve_payment_callback(update: Update, context: ContextTypes.DEFAULT
     except Exception as e:
         logger.error(f"Failed to notify user {requester_user_id} of premium approval: {e}")
 
-    # Notify the admin by editing the caption of the original message
-    await query.edit_message_caption( # Changed from edit_message_text
+    await query.edit_message_caption(
         caption=f"✅ You have approved premium access for user \\(ID\\: {requester_user_id}\\) \\({db_user.full_name or 'N/A'}\\)\\.",
         parse_mode='MarkdownV2',
-        reply_markup=None  # Remove buttons after action
+        reply_markup=None
     )
+
 
 async def decline_payment_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Handles admin's 'Decline' button click for a payment request.
     """
     query = update.callback_query
-    await query.answer()  # Acknowledge the callback
+    await query.answer()
 
     requester_user_id = int(query.data.split('_')[1])
     db_user = User.find(requester_user_id)
 
     if not db_user:
-        # Edit the message to reflect that the user was not found/already processed
-        await query.edit_message_caption( # Changed from edit_message_text
+        await query.edit_message_caption(
             caption=f"⚠️ Request for user ID {requester_user_id} not found or already processed.",
             parse_mode='MarkdownV2',
-            reply_markup=None # Remove buttons
+            reply_markup=None
         )
         logger.warning(f"Admin tried to decline for non-existent user: {requester_user_id}")
         return
 
     if not db_user.payment_pending and not db_user.pending_admin_approval:
-        # Edit the message to reflect that the request is no longer pending
-        await query.edit_message_caption( # Changed from edit_message_text
+        await query.edit_message_caption(
             caption=f"ℹ️ Request for user {requester_user_id} is no longer pending.",
             parse_mode='MarkdownV2',
-            reply_markup=None # Remove buttons
+            reply_markup=None
         )
         logger.info(f"Admin tried to decline an inactive request for user {requester_user_id}.")
         return
@@ -286,8 +305,8 @@ async def decline_payment_callback(update: Update, context: ContextTypes.DEFAULT
     db_user.is_premium = False
     db_user.payment_pending = False
     db_user.pending_admin_approval = False
-    db_user.payment_proof = None  # Clear proof after decline
-    db_user.full_name = None  # Clear name after decline
+    db_user.payment_proof = None
+    db_user.full_name = None
     db_user.save()
     logger.info(f"Premium request declined for user {requester_user_id} by admin {query.from_user.id}.")
 
@@ -305,12 +324,12 @@ async def decline_payment_callback(update: Update, context: ContextTypes.DEFAULT
     except Exception as e:
         logger.error(f"Failed to notify user {requester_user_id} of premium decline: {e}")
 
-    # Notify the admin by editing the caption of the original message
-    await query.edit_message_caption( # Changed from edit_message_text
+    await query.edit_message_caption(
         caption=f"❌ Premium request for user {requester_user_id} has been \\*declined\\* by {query.from_user.first_name}\\.",
         parse_mode='MarkdownV2',
-        reply_markup=None  # Remove buttons after action
+        reply_markup=None
     )
+
 
 # Import user_handlers at the end to avoid circular dependency
 from handlers import user_handlers

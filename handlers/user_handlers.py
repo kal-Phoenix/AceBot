@@ -26,9 +26,26 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     db_user = User.find(user.id)
 
+    # --- ADD THIS BLOCK TO HANDLE REFERRALS ---
+    referral_code = None
+    if context.args:
+        try:
+            potential_code = int(context.args[0])
+            # Check if a user with this ID exists and is not the current user
+            if potential_code != user.id and User.find(potential_code):
+                 referral_code = potential_code
+        except (ValueError, IndexError):
+            pass # Ignore invalid codes
+    # --- END OF BLOCK ---
+
     if not db_user:
         # Create a new user if they don't exist in the database
         db_user = User(user_id=user.id, username=user.username)
+        # --- ADD THIS LINE TO SAVE THE REFERRER ---
+        if referral_code:
+            db_user.referred_by = referral_code
+            logger.info(f"New user {user.id} was referred by {referral_code}.")
+        # --- END OF LINE ---
         db_user.save()
         logger.info(f"New user created: {user.id} ({user.username})")
 

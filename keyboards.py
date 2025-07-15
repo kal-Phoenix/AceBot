@@ -17,7 +17,8 @@ class Keyboards:
             [MI.MOTIVATION, MI.AI_CHAT],
             [MI.PAST_EXAMS, MI.EXAM_TIPS],
             [MI.STUDY_TIPS, MI.ASSIGNMENT_HELP],
-            [MI.UPGRADE, MI.HELP, MI.CONTACT_US]
+            [MI.UPGRADE, MI.INVITE_AND_EARN], # MODIFIED
+            [MI.HELP, MI.CONTACT_US]          # MODIFIED
         ], resize_keyboard=True)
 
     @staticmethod
