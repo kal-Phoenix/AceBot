@@ -43,7 +43,7 @@ class Config:
     # Each folder should contain the respective educational materials.
     DRIVE_FOLDER_IDS = {
         # Textbooks
-        "natural_grade9_textbooks": "YOUR_NATURAL_GRADE9_TEXTBOOKS_FOLDER_ID",
+        "natural_grade9_textbooks": "1BnHNB6qq81BJ5TffaL1pIFhpnKkTvQJx",
         "natural_grade10_textbooks": "YOUR_NATURAL_GRADE10_TEXTBOOKS_FOLDER_ID",
         "natural_grade11_textbooks": "YOUR_NATURAL_GRADE11_TEXTBOOKS_FOLDER_ID",
         "natural_grade12_textbooks": "YOUR_NATURAL_GRADE12_TEXTBOOKS_FOLDER_ID",

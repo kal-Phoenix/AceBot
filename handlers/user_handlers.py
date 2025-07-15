@@ -20,6 +20,13 @@ gemini_service = GeminiService()
 # Define the premium message
 PREMIUM_MESSAGE = "This feature is for premium users only. Please upgrade to access this content. Tap '💎 Upgrade' from the main menu to learn more!"
 
+# Define your username and assignment help description
+YOUR_USERNAME = "@YourUsername"  # Replace with your actual Telegram username
+ASSIGNMENT_HELP_DESCRIPTION = (
+    "🌟 Assignment Help for Entrance Exams 🌟\n"
+    "We know entrance exam prep can feel overwhelming, but don’t stress! We’re here to support you with personalized assistance. "
+    "Contact me for help with assignments or study tips tailored to your exam. Reach out at {} and let’s work together to succeed! 😊"
+)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handles the /start command. Welcomes user and prompts for stream selection or shows main menu."""
@@ -70,7 +77,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     logger.info(f"User {user.id} shown main menu.")
 
-
 async def handle_stream_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handles the user's selection of 'Natural' or 'Social' stream."""
     user = update.effective_user
@@ -96,7 +102,6 @@ async def handle_stream_selection(update: Update, context: ContextTypes.DEFAULT_
         f"Stream set to {stream.capitalize()}! Choose an option:",
         reply_markup=Keyboards.main_menu()
     )
-
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
@@ -175,7 +180,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await content_handlers.handle_study_tips(update, context)  # Route to new handler for study tips
         logger.info(f"User {user.id} requested study tips.")
     elif text == MI.ASSIGNMENT_HELP:
-        await update.message.reply_text("Assignment help coming soon! ✍️", reply_markup=Keyboards.main_menu())
+        await update.message.reply_text(
+            ASSIGNMENT_HELP_DESCRIPTION.format(YOUR_USERNAME),
+            reply_markup=Keyboards.main_menu()
+        )
         logger.info(f"User {user.id} requested assignment help.")
     elif text == MI.UPGRADE:
         # This will trigger the upgrade_command handler via main.py's MessageHandler regex
