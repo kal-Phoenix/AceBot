@@ -15,11 +15,13 @@ class User:
                  last_active: datetime = None, pending_action: str = None,
                  pending_admin_approval: bool = False,
                  full_name: str = None,
-                 # NEW FIELDS FOR REFERRAL SYSTEM
+                 # FIELDS FOR REFERRAL SYSTEM
                  referral_balance: float = 0.0,
                  referral_count: int = 0,
                  referred_by: int = None,
                  referral_credited: bool = False,
+                 # NEW FIELD FOR WITHDRAWAL SYSTEM
+                 withdrawal_request_pending: bool = False,
                  _id=None, **kwargs):
         self.user_id = user_id
         self.username = username
@@ -32,11 +34,13 @@ class User:
         self.pending_action = pending_action
         self.pending_admin_approval = pending_admin_approval
         self.full_name = full_name
-        # Initialize new fields
+        # Initialize referral fields
         self.referral_balance = referral_balance
         self.referral_count = referral_count
         self.referred_by = referred_by
         self.referral_credited = referral_credited
+        # Initialize new withdrawal field
+        self.withdrawal_request_pending = withdrawal_request_pending
         self._id = _id
 
     def save(self):
@@ -65,10 +69,12 @@ class User:
                 pending_action=data.get('pending_action'),
                 pending_admin_approval=data.get('pending_admin_approval', False),
                 full_name=data.get('full_name'),
-                # Get new fields
+                # Get referral fields
                 referral_balance=data.get('referral_balance', 0.0),
                 referral_count=data.get('referral_count', 0),
                 referred_by=data.get('referred_by'),
-                referral_credited=data.get('referral_credited', False)
+                referral_credited=data.get('referral_credited', False),
+                # Get new withdrawal field
+                withdrawal_request_pending=data.get('withdrawal_request_pending', False)
             )
         return None

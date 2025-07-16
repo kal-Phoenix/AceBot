@@ -37,6 +37,16 @@ class Config:
     if 123456789 in PAYMENT_MODERATORS:
         print("WARNING: PAYMENT_MODERATORS are default. Replace with actual Telegram user IDs.")
 
+    # --- NEW: Withdrawal Configuration ---
+    MIN_WITHDRAWAL_AMOUNT = 100.0  # Set the minimum balance required for a withdrawal request
+
+    # Dynamically get bank names from .env file for the withdrawal menu
+    AVAILABLE_BANKS = [
+        "Bank of Abyssinia", "Wegagen Bank", "Dashen Bank",
+        "Oromia International Bank", "Commercial Bank of Ethiopia (CBE)",
+        "Hibret Bank", "Awash Bank", "Telebirr"
+    ]
+    # --- END NEW ---
 
     # Google Drive Folder IDs for Resources
     # IMPORTANT: Replace these with your actual Google Drive folder IDs.
@@ -137,3 +147,9 @@ class MenuItems:
     EXIT_AI_CHAT = "⬅️ Exit AI Chat"
     TEXT_BOOKS = "📖 Text Books"
     SHORT_NOTES = "📝 Short Notes"
+
+    # --- NEW: Invite and Withdrawal Menu Items ---
+    SHARE_INVITE = "↗️ Share Invite"
+    REQUEST_WITHDRAWAL = "💰 Request Withdrawal"
+    BACK_TO_MAIN_MENU = "⬅️ Back to Main Menu"
+    # --- END NEW ---
