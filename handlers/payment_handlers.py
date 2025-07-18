@@ -8,6 +8,10 @@ from keyboards import Keyboards
 
 logger = logging.getLogger(__name__)
 
+def escape_markdown_v2_text(text: str) -> str:
+    """Escapes MarkdownV2 special characters in a given string."""
+    escape_chars = r'_*[]()~`>#+-.=|{}!'
+    return ''.join(f'\\{char}' if char in escape_chars else char for char in text)
 
 async def upgrade_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
@@ -18,9 +22,8 @@ async def upgrade_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db_user = User.find(user.id)
 
     if not db_user:
-        # Import user_handlers here to avoid circular dependency
         from handlers import user_handlers
-        await user_handlers.start(update, context)  # Ensure user exists
+        await user_handlers.start(update, context)
         return
 
     if db_user.is_premium:
@@ -41,17 +44,19 @@ async def upgrade_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info(f"User {user.id} attempted to upgrade but has a pending request.")
         return
 
+    # Construct payment details message with multiple bank accounts
+    payment_details = "To upgrade to premium, please make your payment to one of the following accounts and then select 'Yes, I have paid'\\.\n\n*Payment Details:*\n"
+    for bank, account in Config.BANK_ACCOUNTS.items():
+        payment_details += f"🏦 *{escape_markdown_v2_text(bank)}*\nAccount No: `{account}`\nBeneficiary: {escape_markdown_v2_text(Config.BENEFICIARY_NAME)}\n\n"
+
     await update.message.reply_text(
-        "To upgrade to premium, please make your payment and then select 'Yes, I have paid'\\.\n\n"
-        "Payment Details: \\[Your Bank Name\\]\\, Account No\\: \\[Your Account Number\\]\\, Beneficiary\\: \\[Your Name/Company Name\\]\n"
-        "Alternatively, you can pay via \\[Mobile Money/Other Payment Method\\]\\: \\[Your Mobile Money Number\\]",
+        payment_details,
         parse_mode='MarkdownV2',
         reply_markup=Keyboards.upgrade_menu()
     )
     db_user.pending_action = "await_payment_status_choice"
     db_user.save()
     logger.info(f"User {user.id} initiated upgrade process, awaiting payment status choice.")
-
 
 async def handle_payment_status_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
@@ -63,7 +68,6 @@ async def handle_payment_status_choice(update: Update, context: ContextTypes.DEF
     db_user = User.find(user.id)
 
     if not db_user or db_user.pending_action != "await_payment_status_choice":
-        # Should not happen if flow is correct, but as a safeguard
         await update.message.reply_text("Something went wrong\\. Please try /start again\\.", parse_mode='MarkdownV2',
                                         reply_markup=Keyboards.main_menu())
         db_user.pending_action = None
@@ -75,16 +79,17 @@ async def handle_payment_status_choice(update: Update, context: ContextTypes.DEF
         await update.message.reply_text(
             "Great\\! Please tell me your *Full Name* as it appears on the payment receipt\\.",
             parse_mode='MarkdownV2',
-            reply_markup=ReplyKeyboardRemove()  # Remove keyboard for text input
+            reply_markup=ReplyKeyboardRemove()
         )
         db_user.pending_action = "await_name_for_payment"
         db_user.save()
         logger.info(f"User {user.id} chose 'Yes, I have paid', awaiting name.")
     elif text == "❌ No, I haven't paid yet":
+        payment_details = "No problem\\! You can upgrade anytime\\. Remember the payment details:\\\n\\\n*Payment Details:*\n"
+        for bank, account in Config.BANK_ACCOUNTS.items():
+            payment_details += f"🏦 *{escape_markdown_v2_text(bank)}*\nAccount No: `{account}`\nBeneficiary: {escape_markdown_v2_text(Config.BENEFICIARY_NAME)}\n\n"
         await update.message.reply_text(
-            "No problem\\! You can upgrade anytime\\. Remember the payment details:\\\n\\\n"
-            "Payment Details: \\[Your Bank Name\\]\\, Account No\\: \\[Your Account Number\\]\\, Beneficiary\\: \\[Your Name/Company Name\\]\\\n"
-            "Alternatively, you can pay via \\[Mobile Money/Other Payment Method\\]\\: \\[Your Mobile Money Number\\]",
+            payment_details,
             parse_mode='MarkdownV2',
             reply_markup=Keyboards.main_menu()
         )
@@ -105,7 +110,6 @@ async def handle_payment_status_choice(update: Update, context: ContextTypes.DEF
         )
         logger.warning(f"User {user.id} sent invalid input for payment status choice: {text}")
 
-
 async def process_name_for_payment(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Processes the full name provided by the user for payment.
@@ -116,7 +120,6 @@ async def process_name_for_payment(update: Update, context: ContextTypes.DEFAULT
     db_user = User.find(user.id)
 
     if not db_user or db_user.pending_action != "await_name_for_payment":
-        # This case should ideally not happen if state management is correct
         await update.message.reply_text("Something went wrong\\. Please try /start again\\.", parse_mode='MarkdownV2',
                                         reply_markup=Keyboards.main_menu())
         db_user.pending_action = None
@@ -130,11 +133,9 @@ async def process_name_for_payment(update: Update, context: ContextTypes.DEFAULT
     logger.info(f"User {user.id} provided name: {full_name}, awaiting payment proof.")
 
     await update.message.reply_text(
-        f"Thank you, {full_name.strip()}\\! Now, please send the *screenshot of your payment receipt*\\.",
+        f"Thank you, {escape_markdown_v2_text(full_name.strip())}\\! Now, please send the *screenshot of your payment receipt*\\.",
         parse_mode='MarkdownV2'
-        # ReplyKeyboardRemove() is already active from previous step.
     )
-
 
 async def process_payment_proof(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
@@ -144,7 +145,6 @@ async def process_payment_proof(update: Update, context: ContextTypes.DEFAULT_TY
     db_user = User.find(user.id)
 
     if not db_user or db_user.pending_action != "await_payment_proof":
-        # Ensure the user is in the correct state to send a photo
         await update.message.reply_text("Please initiate the upgrade process first using the '💎 Upgrade' button\\.",
                                         parse_mode='MarkdownV2',
                                         reply_markup=Keyboards.main_menu())
@@ -157,13 +157,12 @@ async def process_payment_proof(update: Update, context: ContextTypes.DEFAULT_TY
         logger.warning(f"User {user.id} sent non-photo when awaiting payment proof.")
         return
 
-    # Get the file ID of the largest photo
     photo_file_id = update.message.photo[-1].file_id
 
     db_user.payment_proof = photo_file_id
     db_user.payment_pending = True
     db_user.pending_admin_approval = True
-    db_user.pending_action = None  # Clear pending action
+    db_user.pending_action = None
     db_user.save()
     logger.info(f"User {user.id} submitted payment proof, request pending admin approval.")
 
@@ -171,15 +170,14 @@ async def process_payment_proof(update: Update, context: ContextTypes.DEFAULT_TY
         "Thank you\\! Your payment proof has been received and sent to the admin for review\\. "
         "We will notify you once your premium access is approved\\. This usually takes 24\\-48 hours\\.",
         parse_mode='MarkdownV2',
-        reply_markup=Keyboards.main_menu()  # Return to main menu
+        reply_markup=Keyboards.main_menu()
     )
 
-    # Notify admin(s)
     for admin_id in Config.PAYMENT_MODERATORS:
         try:
             admin_message = (
-                f"🚨 \\*\\*New Premium Request\\*\\* from user {user.first_name} \\(@{user.username or 'N/A'}\\) \\(ID\\: {user.id}\\)\n\n"
-                f"\\*\\*Full Name\\*\\*: {db_user.full_name}\n"
+                f"🚨 \\*\\*New Premium Request\\*\\* from user {escape_markdown_v2_text(user.first_name)} \\(@{user.username or 'N/A'}\\) \\(ID\\: {user.id}\\)\n\n"
+                f"\\*\\*Full Name\\*\\*: {escape_markdown_v2_text(db_user.full_name)}\n"
                 f"\\*\\*Request Status\\*\\*: Awaiting Approval\n"
             )
             await context.bot.send_photo(
@@ -193,15 +191,12 @@ async def process_payment_proof(update: Update, context: ContextTypes.DEFAULT_TY
         except Exception as e:
             logger.error(f"Failed to send payment notification to admin {admin_id}: {e}")
 
-
-# Admin Handlers (Now part of payment_handlers)
-
 async def approve_payment_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Handles admin's 'Approve' button click for a payment request.
     """
     query = update.callback_query
-    await query.answer()  # Acknowledge the callback
+    await query.answer()
 
     requester_user_id = int(query.data.split('_')[1])
     db_user = User.find(requester_user_id)
@@ -224,7 +219,6 @@ async def approve_payment_callback(update: Update, context: ContextTypes.DEFAULT
         logger.info(f"Admin tried to approve already premium user {requester_user_id}.")
         return
 
-    # --- ADD THIS BLOCK TO PROCESS REFERRAL EARNINGS ---
     if db_user.referred_by and not db_user.referral_credited:
         referrer = User.find(db_user.referred_by)
         if referrer:
@@ -233,7 +227,6 @@ async def approve_payment_callback(update: Update, context: ContextTypes.DEFAULT
             referrer.save()
             logger.info(f"User {referrer.user_id} earned 50 ETB for referring {requester_user_id}.")
 
-            # Notify the referrer
             try:
                 await context.bot.send_message(
                     chat_id=referrer.user_id,
@@ -243,19 +236,16 @@ async def approve_payment_callback(update: Update, context: ContextTypes.DEFAULT
             except Exception as e:
                 logger.error(f"Failed to send referral bonus notification to {referrer.user_id}: {e}")
 
-        # Mark the referral as credited to prevent double payment
         db_user.referral_credited = True
-    # --- END OF BLOCK ---
 
     db_user.is_premium = True
     db_user.payment_pending = False
     db_user.pending_admin_approval = False
-    db_user.payment_proof = None  # Clear proof after approval
-    db_user.full_name = None  # Clear name after approval
+    db_user.payment_proof = None
+    db_user.full_name = None
     db_user.save()
     logger.info(f"Premium access approved for user {requester_user_id} by admin {query.from_user.id}.")
 
-    # Notify the user
     try:
         await context.bot.send_message(
             chat_id=requester_user_id,
@@ -268,11 +258,10 @@ async def approve_payment_callback(update: Update, context: ContextTypes.DEFAULT
         logger.error(f"Failed to notify user {requester_user_id} of premium approval: {e}")
 
     await query.edit_message_caption(
-        caption=f"✅ You have approved premium access for user \\(ID\\: {requester_user_id}\\) \\({db_user.full_name or 'N/A'}\\)\\.",
+        caption=f"✅ You have approved premium access for user \\(ID\\: {requester_user_id}\\) \\({escape_markdown_v2_text(db_user.full_name or 'N/A')}\\)\\.",
         parse_mode='MarkdownV2',
         reply_markup=None
     )
-
 
 async def decline_payment_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
@@ -310,7 +299,6 @@ async def decline_payment_callback(update: Update, context: ContextTypes.DEFAULT
     db_user.save()
     logger.info(f"Premium request declined for user {requester_user_id} by admin {query.from_user.id}.")
 
-    # Notify the user
     try:
         await context.bot.send_message(
             chat_id=requester_user_id,
@@ -325,11 +313,9 @@ async def decline_payment_callback(update: Update, context: ContextTypes.DEFAULT
         logger.error(f"Failed to notify user {requester_user_id} of premium decline: {e}")
 
     await query.edit_message_caption(
-        caption=f"❌ Premium request for user {requester_user_id} has been \\*declined\\* by {query.from_user.first_name}\\.",
+        caption=f"❌ Premium request for user {requester_user_id} has been \\*declined\\* by {escape_markdown_v2_text(query.from_user.first_name)}\\.",
         parse_mode='MarkdownV2',
         reply_markup=None
     )
 
-
-# Import user_handlers at the end to avoid circular dependency
 from handlers import user_handlers

@@ -11,7 +11,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-
 def main():
     persistence = PicklePersistence(filepath="bot_data.pickle")
 
@@ -39,28 +38,33 @@ def main():
                        resource_handlers.handle_cheat_sheet_selection)
     )
 
-    # Handler for photos (payment proof)
-    application.add_handler(MessageHandler(filters.PHOTO, payment_handlers.process_payment_proof))
+    # Handler for photos (payment proof and withdrawal screenshots)
+    application.add_handler(MessageHandler(filters.PHOTO, lambda update, context: (
+        invite_handlers.process_withdrawal_screenshot(update, context)
+        if context.user_data.get('admin_action') == "awaiting_withdrawal_screenshot"
+        else payment_handlers.process_payment_proof(update, context)
+    )))
 
     # Callback query handlers for admin buttons
     application.add_handler(CallbackQueryHandler(payment_handlers.approve_payment_callback, pattern=r"^approve_\d+$"))
     application.add_handler(CallbackQueryHandler(payment_handlers.decline_payment_callback, pattern=r"^decline_\d+$"))
 
-    # --- NEW: Callback handlers for withdrawal approval ---
+    # Callback handlers for withdrawal approval and inline invite menu
     application.add_handler(CallbackQueryHandler(invite_handlers.approve_withdrawal_callback,
                                                  pattern=r"^approve_withdrawal_\d+_\d+\.?\d*$"))
-    application.add_handler(
-        CallbackQueryHandler(invite_handlers.decline_withdrawal_callback, pattern=r"^decline_withdrawal_\d+$"))
-    # --- END NEW ---
+    application.add_handler(CallbackQueryHandler(invite_handlers.decline_withdrawal_callback,
+                                                 pattern=r"^decline_withdrawal_\d+$"))
+    application.add_handler(CallbackQueryHandler(invite_handlers.handle_inline_invite_menu,
+                                                 pattern=r"^(share_invite|request_withdrawal|back_to_main_menu|back_to_invite_menu)$"))
+    application.add_handler(CallbackQueryHandler(invite_handlers.handle_bank_selection,
+                                                 pattern=r"^bank_"))
 
     # General text handler - MUST BE LAST among message handlers
-    # This handler uses the logic in user_handlers.handle_message to route menu buttons and pending actions
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, user_handlers.handle_message))
 
     logger.info("Bot is running with updated features!")
 
     application.run_polling(allowed_updates=Update.ALL_TYPES)
-
 
 if __name__ == "__main__":
     main()

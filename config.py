@@ -25,34 +25,41 @@ class Config:
         print("WARNING: GEMINI_API_KEY is not set in environment variables or .env file. Please set it.")
 
     # Google Drive Service Account Credentials Path
-    # Ensure 'credentials.json' is in the same directory as your bot's main script
     GOOGLE_DRIVE_CREDENTIALS_PATH = os.getenv("GOOGLE_DRIVE_CREDENTIALS_PATH", "credentials.json")
 
-    # Telegram User IDs for Payment Moderators (replace with actual IDs)
-    # These users will receive payment verification requests and can use the /approve command.
+    # Telegram User IDs for Payment Moderators
     PAYMENT_MODERATORS = [
-        int(os.getenv("MOD_ID_1", "8188221245")), # Replace with actual moderator ID
-        # Add more moderator IDs as needed
+        int(os.getenv("MOD_ID_1", "8188221245")),
     ]
     if 123456789 in PAYMENT_MODERATORS:
         print("WARNING: PAYMENT_MODERATORS are default. Replace with actual Telegram user IDs.")
 
-    # --- NEW: Withdrawal Configuration ---
-    MIN_WITHDRAWAL_AMOUNT = 100.0  # Set the minimum balance required for a withdrawal request
+    # Withdrawal Configuration
+    MIN_WITHDRAWAL_AMOUNT = 50.0
 
-    # Dynamically get bank names from .env file for the withdrawal menu
+    # Available banks for withdrawal
     AVAILABLE_BANKS = [
         "Bank of Abyssinia", "Wegagen Bank", "Dashen Bank",
         "Oromia International Bank", "Commercial Bank of Ethiopia (CBE)",
         "Hibret Bank", "Awash Bank", "Telebirr"
     ]
-    # --- END NEW ---
+
+    # Bank account details for premium upgrades
+    BANK_ACCOUNTS = {
+        "Commercial Bank of Ethiopia (CBE)": os.getenv("CBE_ACCOUNT", "YOUR_CBE_ACCOUNT_NUMBER"),
+        "Dashen Bank": os.getenv("DASHEN_ACCOUNT", "YOUR_DASHEN_ACCOUNT_NUMBER"),
+        "Bank of Abyssinia": os.getenv("BOA_ACCOUNT", "YOUR_BOA_ACCOUNT_NUMBER"),
+        "Awash Bank": os.getenv("AWASH_ACCOUNT", "YOUR_AWASH_ACCOUNT_NUMBER"),
+        "Oromia International Bank": os.getenv("OROMIA_ACCOUNT", "YOUR_OROMIA_ACCOUNT_NUMBER"),
+        "Hibret Bank": os.getenv("HIBIR_ACCOUNT", "YOUR_HIBIR_ACCOUNT_NUMBER"),
+        "Telebirr": os.getenv("TELEBIRR_ACCOUNT", "YOUR_TELEBIRR_NUMBER")
+    }
+    BENEFICIARY_NAME = os.getenv("BENEFICIARY_NAME", "YOUR_NAME_OR_COMPANY_NAME")
+    if BENEFICIARY_NAME == "YOUR_NAME_OR_COMPANY_NAME":
+        print("WARNING: BENEFICIARY_NAME is not set in environment variables or .env file. Please set it.")
 
     # Google Drive Folder IDs for Resources
-    # IMPORTANT: Replace these with your actual Google Drive folder IDs.
-    # Each folder should contain the respective educational materials.
     DRIVE_FOLDER_IDS = {
-        # Textbooks
         "natural_grade9_textbooks": "1BnHNB6qq81BJ5TffaL1pIFhpnKkTvQJx",
         "natural_grade10_textbooks": "YOUR_NATURAL_GRADE10_TEXTBOOKS_FOLDER_ID",
         "natural_grade11_textbooks": "YOUR_NATURAL_GRADE11_TEXTBOOKS_FOLDER_ID",
@@ -61,8 +68,6 @@ class Config:
         "social_grade10_textbooks": "YOUR_SOCIAL_GRADE10_TEXTBOOKS_FOLDER_ID",
         "social_grade11_textbooks": "YOUR_SOCIAL_GRADE11_TEXTBOOKS_FOLDER_ID",
         "social_grade12_textbooks": "YOUR_SOCIAL_GRADE12_TEXTBOOKS_FOLDER_ID",
-
-        # Teacher's Guides
         "natural_grade9_teachers_guide": "YOUR_NATURAL_GRADE9_GUIDE_FOLDER_ID",
         "natural_grade10_teachers_guide": "YOUR_NATURAL_GRADE10_GUIDE_FOLDER_ID",
         "natural_grade11_teachers_guide": "YOUR_NATURAL_GRADE11_GUIDE_FOLDER_ID",
@@ -71,8 +76,6 @@ class Config:
         "social_grade10_teachers_guide": "YOUR_SOCIAL_GRADE10_GUIDE_FOLDER_ID",
         "social_grade11_teachers_guide": "YOUR_SOCIAL_GRADE11_GUIDE_FOLDER_ID",
         "social_grade12_teachers_guide": "YOUR_SOCIAL_GRADE12_GUIDE_FOLDER_ID",
-
-        # Short Notes
         "natural_math_notes": "YOUR_NATURAL_MATH_NOTES_FOLDER_ID",
         "natural_english_notes": "YOUR_NATURAL_ENGLISH_NOTES_FOLDER_ID",
         "natural_physics_notes": "YOUR_NATURAL_PHYSICS_NOTES_FOLDER_ID",
@@ -85,8 +88,6 @@ class Config:
         "social_history_notes": "YOUR_SOCIAL_HISTORY_NOTES_FOLDER_ID",
         "social_economics_notes": "YOUR_SOCIAL_ECONOMICS_NOTES_FOLDER_ID",
         "social_aptitude_notes": "YOUR_SOCIAL_APTITUDE_NOTES_FOLDER_ID",
-
-        # Cheat Sheets
         "natural_math_cheats": "YOUR_NATURAL_MATH_CHEATS_FOLDER_ID",
         "natural_english_cheats": "YOUR_NATURAL_ENGLISH_CHEATS_FOLDER_ID",
         "natural_physics_cheats": "YOUR_NATURAL_PHYSICS_CHEATS_FOLDER_ID",
@@ -99,8 +100,6 @@ class Config:
         "social_history_cheats": "YOUR_SOCIAL_HISTORY_CHEATS_FOLDER_ID",
         "social_economics_cheats": "YOUR_SOCIAL_ECONOMICS_CHEATS_FOLDER_ID",
         "social_aptitude_cheats": "YOUR_SOCIAL_APTITUDE_CHEATS_FOLDER_ID",
-
-        # Quizzes
         "natural_math_quizzes": "YOUR_NATURAL_MATH_QUIZZES_FOLDER_ID",
         "natural_english_quizzes": "YOUR_NATURAL_ENGLISH_QUIZZES_FOLDER_ID",
         "natural_physics_quizzes": "YOUR_NATURAL_PHYSICS_QUIZZES_FOLDER_ID",
@@ -113,20 +112,13 @@ class Config:
         "social_history_quizzes": "YOUR_SOCIAL_HISTORY_QUIZZES_FOLDER_ID",
         "social_economics_quizzes": "YOUR_SOCIAL_ECONOMICS_QUIZZES_FOLDER_ID",
         "social_aptitude_quizzes": "YOUR_SOCIAL_APTITUDE_QUIZZES_FOLDER_ID",
-
-        # Past Exams
         **{f"natural_{year}_exam": f"YOUR_NATURAL_{year}_EXAM_FOLDER_ID" for year in range(2000, 2018)},
         **{f"social_{year}_exam": f"YOUR_SOCIAL_{year}_EXAM_FOLDER_ID" for year in range(2000, 2018)},
-
-        # Exam Tips
         "natural_exam_tips": "YOUR_NATURAL_EXAM_TIPS_FOLDER_ID",
         "social_exam_tips": "YOUR_SOCIAL_EXAM_TIPS_FOLDER_ID",
-
-        # Study Tips
         "natural_study_tips": "YOUR_NATURAL_STUDY_TIPS_FOLDER_ID",
         "social_study_tips": "YOUR_SOCIAL_STUDY_TIPS_FOLDER_ID",
     }
-
 
 class MenuItems:
     """
@@ -147,9 +139,6 @@ class MenuItems:
     EXIT_AI_CHAT = "⬅️ Exit AI Chat"
     TEXT_BOOKS = "📖 Text Books"
     SHORT_NOTES = "📝 Short Notes"
-
-    # --- NEW: Invite and Withdrawal Menu Items ---
     SHARE_INVITE = "↗️ Share Invite"
     REQUEST_WITHDRAWAL = "💰 Request Withdrawal"
     BACK_TO_MAIN_MENU = "⬅️ Back to Main Menu"
-    # --- END NEW ---

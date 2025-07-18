@@ -3,7 +3,6 @@ from telegram import ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardBu
 from config import MenuItems as MI, Config
 import math
 
-
 class Keyboards:
     """
     A collection of static methods to generate different ReplyKeyboardMarkup objects
@@ -22,8 +21,6 @@ class Keyboards:
             [MI.HELP, MI.CONTACT_US]
         ], resize_keyboard=True)
 
-    # --- NEW: Invite and Withdrawal Keyboards ---
-
     @staticmethod
     def invite_menu():
         """Generates the menu for the 'Invite and Earn' feature."""
@@ -33,9 +30,19 @@ class Keyboards:
         ], resize_keyboard=True)
 
     @staticmethod
+    def invite_inline_menu():
+        """Generates an inline menu for the 'Invite and Earn' feature."""
+        return InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton("↗️ Share Invite", callback_data="share_invite"),
+                InlineKeyboardButton("💰 Request Withdrawal", callback_data="request_withdrawal")
+            ],
+            [InlineKeyboardButton("⬅️ Back to Main Menu", callback_data="back_to_main_menu")]
+        ])
+
+    @staticmethod
     def share_menu(share_url: str, share_text: str):
         """Generates an inline keyboard with a button to share the referral link."""
-        # URL encode the text for the share URL
         from urllib.parse import quote
         encoded_text = quote(share_text)
 
@@ -48,22 +55,27 @@ class Keyboards:
     def withdrawal_banks_menu():
         """Generates a menu of available banks for withdrawal."""
         banks = Config.AVAILABLE_BANKS
-        # Arrange banks in rows of 2 for better display
         keyboard = [banks[i:i + 2] for i in range(0, len(banks), 2)]
         keyboard.append([MI.BACK_TO_MAIN_MENU])
         return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+
+    @staticmethod
+    def withdrawal_banks_inline_menu():
+        """Generates an inline menu of available banks for withdrawal."""
+        banks = Config.AVAILABLE_BANKS
+        keyboard = [[InlineKeyboardButton(bank, callback_data=f"bank_{bank}")] for bank in banks]
+        keyboard.append([InlineKeyboardButton("⬅️ Back to Invite Menu", callback_data="back_to_invite_menu")])
+        return InlineKeyboardMarkup(keyboard)
 
     @staticmethod
     def admin_withdrawal_approval_keyboard(user_id: int, amount: float):
         """Generates an inline keyboard for admin to approve or decline a withdrawal request."""
         return InlineKeyboardMarkup([
             [
-                InlineKeyboardButton("✅ Approve", callback_data=f"approve_withdrawal_{user_id}_{amount}"),
-                InlineKeyboardButton("❌ Decline", callback_data=f"decline_withdrawal_{user_id}")
+                InlineKeyboardButton("✅ Sent", callback_data=f"approve_withdrawal_{user_id}_{amount}"),
+                InlineKeyboardButton("❌ Not Sent", callback_data=f"decline_withdrawal_{user_id}")
             ]
         ])
-
-    # --- END NEW ---
 
     @staticmethod
     def resources_menu():
@@ -187,7 +199,6 @@ class Keyboards:
     def admin_payment_approval_keyboard(user_id: int):
         """
         Generates an inline keyboard for admin to approve or decline a payment request.
-        The callback data includes the user_id to identify the request.
         """
         return InlineKeyboardMarkup([
             [
