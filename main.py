@@ -1,6 +1,8 @@
 # main.py
 import logging
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, PicklePersistence, CallbackQueryHandler
+
+from database.models import User
 from handlers import user_handlers, payment_handlers, resource_handlers, content_handlers, invite_handlers
 from config import Config, MenuItems
 from telegram import Update
@@ -44,6 +46,16 @@ def main():
         if context.user_data.get('admin_action') == "awaiting_withdrawal_screenshot"
         else payment_handlers.process_payment_proof(update, context)
     )))
+
+    # Handler for account holder's name
+    application.add_handler(MessageHandler(
+        filters.TEXT & ~filters.COMMAND & filters.Regex(r".+"),
+        lambda update, context: (
+            invite_handlers.handle_account_holder(update, context)
+            if User.find(update.effective_user.id) and User.find(update.effective_user.id).pending_action == "awaiting_account_holder_for_withdrawal"
+            else user_handlers.handle_message(update, context)
+        )
+    ))
 
     # Callback query handlers for admin buttons
     application.add_handler(CallbackQueryHandler(payment_handlers.approve_payment_callback, pattern=r"^approve_\d+$"))

@@ -217,7 +217,7 @@ async def handle_bank_selection(update: Update, context: ContextTypes.DEFAULT_TY
     logger.info(f"User {user.id} selected bank: {bank_name}")
 
 async def handle_account_number(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Processes the account number and sends the request to admins."""
+    """Processes the account number and asks for the account holder's name."""
     user = update.effective_user
     db_user = User.find(user.id)
     account_number = update.message.text
@@ -237,10 +237,49 @@ async def handle_account_number(update: Update, context: ContextTypes.DEFAULT_TY
         db_user.save()
         return
 
+    context.user_data['withdrawal_account_number'] = account_number
+    db_user.pending_action = "awaiting_account_holder_for_withdrawal"
+    db_user.save()
+
+    message = (
+        f"🏦 *Selected Bank: {escape_markdown_v2_text(bank_name)}*\n"
+        f"💳 *Account Number: {escape_markdown_v2_text(account_number)}*\n\n"
+        f"{escape_markdown_v2_text('Please enter the full name of the account holder:')}"
+    )
+    await update.message.reply_text(
+        text=message,
+        parse_mode='MarkdownV2',
+        reply_markup=ReplyKeyboardRemove()
+    )
+    logger.info(f"User {user.id} provided account number for {bank_name}, awaiting account holder's name.")
+
+async def handle_account_holder(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Processes the account holder's name and sends the withdrawal request to admins."""
+    user = update.effective_user
+    db_user = User.find(user.id)
+    account_holder = update.message.text
+
+    if not db_user or db_user.pending_action != "awaiting_account_holder_for_withdrawal":
+        await user_handlers.start(update, context)
+        return
+
+    bank_name = context.user_data.get('withdrawal_bank')
+    account_number = context.user_data.get('withdrawal_account_number')
+    if not bank_name or not account_number:
+        await update.message.reply_text(
+            f"{escape_markdown_v2_text('Something went wrong. Please start the withdrawal process again.')}",
+            parse_mode='MarkdownV2',
+            reply_markup=Keyboards.invite_inline_menu()
+        )
+        db_user.pending_action = None
+        db_user.save()
+        return
+
     db_user.pending_action = None
     db_user.withdrawal_request_pending = True
     db_user.withdrawal_bank = bank_name
     db_user.withdrawal_account_number = account_number
+    db_user.withdrawal_account_holder = account_holder
     db_user.save()
 
     withdrawal_amount = db_user.referral_balance
@@ -261,7 +300,8 @@ async def handle_account_number(update: Update, context: ContextTypes.DEFAULT_TY
         f"*User ID:* `{user.id}`\n"
         f"*Amount to Withdraw:* {escape_markdown_v2_text(f'{withdrawal_amount:.2f} ETB')}\n"
         f"*Bank:* {escape_markdown_v2_text(bank_name)}\n"
-        f"*Account Number:* `{escape_markdown_v2_text(account_number)}`\n\n"
+        f"*Account Number:* `{escape_markdown_v2_text(account_number)}`\n"
+        f"*Account Holder:* {escape_markdown_v2_text(account_holder)}\n\n"
         f"{escape_markdown_v2_text('Please verify and process the payment.')}"
     )
 
@@ -289,6 +329,7 @@ async def handle_account_number(update: Update, context: ContextTypes.DEFAULT_TY
         db_user.withdrawal_request_pending = False
         db_user.withdrawal_bank = None
         db_user.withdrawal_account_number = None
+        db_user.withdrawal_account_holder = None
         db_user.save()
         logger.error(f"No admins were notified for withdrawal request from user {user.id}.")
         return
@@ -296,6 +337,8 @@ async def handle_account_number(update: Update, context: ContextTypes.DEFAULT_TY
     logger.info(f"User {user.id} submitted withdrawal request for {withdrawal_amount} ETB to {bank_name}.")
     if 'withdrawal_bank' in context.user_data:
         del context.user_data['withdrawal_bank']
+    if 'withdrawal_account_number' in context.user_data:
+        del context.user_data['withdrawal_account_number']
 
 async def approve_withdrawal_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handles admin's 'Sent' button for a withdrawal, prompting for a screenshot."""
@@ -360,6 +403,7 @@ async def process_withdrawal_screenshot(update: Update, context: ContextTypes.DE
     db_user.withdrawal_request_pending = False
     db_user.withdrawal_bank = None
     db_user.withdrawal_account_number = None
+    db_user.withdrawal_account_holder = None
     db_user.save()
 
     try:
@@ -406,6 +450,7 @@ async def decline_withdrawal_callback(update: Update, context: ContextTypes.DEFA
     db_user.withdrawal_request_pending = False
     db_user.withdrawal_bank = None
     db_user.withdrawal_account_number = None
+    db_user.withdrawal_account_holder = None
     db_user.save()
 
     try:
