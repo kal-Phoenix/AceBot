@@ -27,6 +27,8 @@ class Config:
     # Google Drive Service Account Credentials Path
     GOOGLE_DRIVE_CREDENTIALS_PATH = os.getenv("GOOGLE_DRIVE_CREDENTIALS_PATH", "credentials.json")
 
+    ADMIN_BOT_TOKEN = "7806147910:AAFV5tvcof60N92LFd2JqT17KfnKqU3ogDI"
+    ADMIN_IDS = [8188221245]
     # Telegram User IDs for Payment Moderators
     PAYMENT_MODERATORS = [
         int(os.getenv("MOD_ID_1", "8188221245")),

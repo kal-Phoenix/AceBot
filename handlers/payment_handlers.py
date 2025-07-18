@@ -45,7 +45,7 @@ async def upgrade_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     # Construct payment details message with multiple bank accounts
-    payment_details = "To upgrade to premium, please make your payment to one of the following accounts and then select 'Yes, I have paid'\\.\n\n*Payment Details:*\n"
+    payment_details = "To upgrade to premium, please pay 300ETB to one of the following accounts and then select 'Yes, I have paid'\\.\n\n*Payment Details:*\n"
     for bank, account in Config.BANK_ACCOUNTS.items():
         payment_details += f"🏦 *{escape_markdown_v2_text(bank)}*\nAccount No: `{account}`\nBeneficiary: {escape_markdown_v2_text(Config.BENEFICIARY_NAME)}\n\n"
 
@@ -176,9 +176,9 @@ async def process_payment_proof(update: Update, context: ContextTypes.DEFAULT_TY
     for admin_id in Config.PAYMENT_MODERATORS:
         try:
             admin_message = (
-                f"🚨 \\*\\*New Premium Request\\*\\* from user {escape_markdown_v2_text(user.first_name)} \\(@{user.username or 'N/A'}\\) \\(ID\\: {user.id}\\)\n\n"
-                f"\\*\\*Full Name\\*\\*: {escape_markdown_v2_text(db_user.full_name)}\n"
-                f"\\*\\*Request Status\\*\\*: Awaiting Approval\n"
+                f"🚨 New Premium Request from user {escape_markdown_v2_text(user.first_name)} \\(@{user.username or 'N/A'}\\) \\(ID\\: {user.id}\\)\n\n"
+                f"Full Name: {escape_markdown_v2_text(db_user.full_name)}\n"
+                f"Request Status: Awaiting Approval\n"
             )
             await context.bot.send_photo(
                 chat_id=admin_id,
