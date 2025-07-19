@@ -176,9 +176,11 @@ async def process_payment_proof(update: Update, context: ContextTypes.DEFAULT_TY
     for admin_id in Config.PAYMENT_MODERATORS:
         try:
             admin_message = (
-                f"🚨 New Premium Request from user {escape_markdown_v2_text(user.first_name)} \\(@{user.username or 'N/A'}\\) \\(ID\\: {user.id}\\)\n\n"
-                f"Full Name: {escape_markdown_v2_text(db_user.full_name)}\n"
-                f"Request Status: Awaiting Approval\n"
+                f"🚨 New Premium Request from user\n\n"
+                f"*{escape_markdown_v2_text(user.first_name)}* \\(@{user.username or 'N/A'}\\)\n"
+                f"\\(ID: `{user.id}`\\)\n\n"
+                f"*Full Name:* {escape_markdown_v2_text(db_user.full_name)}\n"
+                f"*Request Status:* Awaiting Approval"
             )
             await context.bot.send_photo(
                 chat_id=admin_id,

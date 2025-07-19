@@ -31,6 +31,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handles the /start command. Welcomes user and prompts for stream selection or shows main menu."""
     user = update.effective_user
     db_user = User.find(user.id)
+
+    # --- NEW: Enforce user blocking ---
+    if db_user and db_user.blocked:
+        await update.message.reply_text("Your account has been suspended. Please contact support.")
+        logger.warning(f"Blocked user {user.id} tried to use /start.")
+        return
+    # --- END NEW ---
+
     referral_code = None
     if context.args:
         try:
@@ -99,6 +107,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     db_user = User.find(user.id)
 
+    # --- NEW: Enforce user blocking ---
+    if db_user and db_user.blocked:
+        await update.message.reply_text("Your account has been suspended. Please contact support.")
+        logger.warning(f"Blocked user {user.id} tried to send a message: {text}")
+        return
+    # --- END NEW ---
+
     if not db_user or not db_user.stream:
         await start(update, context)
         return
@@ -152,9 +167,28 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await invite_handlers.handle_invite_menu(update, context)
     # --- END NEW ---
     elif text == MI.HELP:
-        await update.message.reply_text("For assistance, please contact support. 🆘", reply_markup=Keyboards.main_menu())
+        help_text = (
+            "🆘 *Help Center* 🆘\n\n"
+            "Welcome to the AceBot Help Center\\! Here's a quick guide to what I can do for you:\n\n"
+            "📚 *Resources:* Access Text Books, Teacher's Guides, Short Notes, and Cheat Sheets\\. \n"
+            "🧠 *Quizzes:* Test your knowledge with interactive quizzes \\(Premium feature\\)\\. \n"
+            "🤖 *AI Chat:* Get instant help on subjects from our AI Tutor \\(Premium feature\\)\\. \n"
+            "📝 *Past Exams:* Find past entrance exams to practice with\\. \n"
+            "💡 *Tips & Motivation:* Get valuable Exam/Study tips and motivational quotes to keep you going\\. \n"
+            "💎 *Upgrade:* Unlock premium features for full access\\. \n"
+            "🤝 *Invite and Earn:* Share the bot with friends and earn rewards\\. \n\n"
+            "Simply use the main menu buttons to navigate\\. If you're stuck, restarting with /start usually helps\\!"
+        )
+        await update.message.reply_text(help_text, parse_mode='MarkdownV2', reply_markup=Keyboards.main_menu())
     elif text == MI.CONTACT_US:
-        await update.message.reply_text("You can reach us at support@acebot.com 📧", reply_markup=Keyboards.main_menu())
+        contact_text = (
+            "📧 *Contact Us* 📧\n\n"
+            "Have questions, feedback, or need support? We'd love to hear from you\\!\n\n"
+            "This bot was proudly developed by *Kaleab Dereje and the Phoenix Team* from Addis Ababa University \\(AAU\\)\\.\n\n"
+            "For support, bug reports, or suggestions, please reach out to our team\\. You can contact the lead developer at @Kaleab\\_dev or send an email to phoenixteam@aau\\.edu\\.et \\(example email\\)\\.\n\n"
+            "Your feedback helps us make AceBot better for everyone\\! 🚀"
+        )
+        await update.message.reply_text(contact_text, parse_mode='MarkdownV2', reply_markup=Keyboards.main_menu())
     elif text == MI.SHORT_NOTES:
         if not db_user.is_premium:
             await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())

@@ -6,11 +6,38 @@ from database.models import User
 from services.google_drive import GoogleDriveService
 from config import Config
 from keyboards import Keyboards
-from handlers import user_handlers # For calling start() on error
+from handlers import user_handlers  # For calling start() on error
 
 logger = logging.getLogger(__name__)
 drive_service = GoogleDriveService()
 PREMIUM_MESSAGE = "This feature is for premium users only. Please upgrade to access this content. Tap '💎 Upgrade' from the main menu to learn more!"
+
+# --- NEW: Sample quiz data structure ---
+# In a real application, this might come from a JSON file or a database.
+DUMMY_QUIZZES = {
+    'natural_mathematics': [
+        {
+            'question': "What is the value of π (pi) to two decimal places?",
+            'options': ["3.12", "3.14", "3.16", "3.18"],
+            'correct_option_id': 1
+        },
+        {
+            'question': "What is the square root of 64?",
+            'options': ["6", "7", "8", "9"],
+            'correct_option_id': 2
+        }
+    ],
+    'social_history': [
+        {
+            'question': "In which century did the Battle of Adwa take place?",
+            'options': ["18th", "19th", "20th"],
+            'correct_option_id': 1
+        }
+    ]
+}
+
+
+# --- END NEW ---
 
 
 async def handle_quizzes_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -42,54 +69,51 @@ async def handle_quizzes_menu(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 async def _process_quiz_subject_selection(update: Update, context: ContextTypes.DEFAULT_TYPE, db_user: User,
                                           subject_text: str):
-    """Processes the selected subject for quizzes and provides links."""
-    # PREMIUM CHECK for Quizzes (redundant if handle_quizzes_menu already checks, but safe)
+    """Processes the selected subject for quizzes and provides interactive quiz polls."""
     if not db_user.is_premium:
         await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())
         logger.info(f"Non-premium user {db_user.user_id} attempted to process Quizzes selection.")
         return
 
-    subject_map = {
-        "mathematics": "math",
-        "english": "english",
-        "physics": "physics",
-        "biology": "biology",
-        "chemistry": "chemistry",
-        "aptitude": "aptitude",
-        "geography": "geography",
+    # Map display names to internal keys for the quiz data
+    subject_key_map = {
+        "mathematics": "mathematics",
         "history": "history",
-        "economics": "economics"
+        # Add other subjects here as quizzes are created
     }
 
-    subject_key = subject_map.get(subject_text.lower())  # Ensure lower case for mapping
+    subject_key = subject_key_map.get(subject_text.lower())
     if not subject_key:
-        await update.message.reply_text("Invalid subject selected for quizzes.")
-        logger.warning(f"User {db_user.user_id} sent invalid quiz subject: {subject_text}")
-        return
-
-    folder_key = f"{db_user.stream}_{subject_key}_quizzes"
-    folder_id = Config.DRIVE_FOLDER_IDS.get(folder_key)
-
-    if not folder_id or folder_id.startswith("YOUR_"):  # Check for placeholder IDs
         await update.message.reply_text(
-            f"Quizzes not available for {subject_text.capitalize()} yet. "
-            f"Please ensure the Google Drive folder ID is configured correctly in config.py."
-        )
-        logger.info(f"No valid folder ID found or placeholder used for {folder_key} for user {db_user.user_id}.")
+            f"Interactive quizzes for {subject_text.capitalize()} are not yet available. Please check back later.",
+            reply_markup=Keyboards.main_menu())
         return
 
-    files = drive_service.list_files(folder_id)
-    if not files:
-        await update.message.reply_text("No quizzes found for this subject.")
-        logger.info(f"No files found in folder {folder_id} for user {db_user.user_id}.")
+    quiz_key = f"{db_user.stream}_{subject_key}"
+    questions = DUMMY_QUIZZES.get(quiz_key)
+
+    if not questions:
+        await update.message.reply_text("No quizzes found for this subject.", reply_markup=Keyboards.main_menu())
+        logger.info(f"No quiz data found for key {quiz_key} for user {db_user.user_id}.")
         return
 
-    message = f"🧠 {subject_text.capitalize()} Quizzes ({db_user.stream.capitalize()}):\n\n"
-    for file in files:
-        message += f"📄 {file['name']}\n🔗 {file['webViewLink']}\n\n"
+    await update.message.reply_text(f"🧠 Here are your {subject_text.capitalize()} quizzes. Good luck!",
+                                    reply_markup=Keyboards.main_menu())
 
-    await update.message.reply_text(message, reply_markup=Keyboards.main_menu())
-    logger.info(f"User {db_user.user_id} received quizzes for {subject_text}.")
+    for quiz_item in questions:
+        try:
+            await context.bot.send_poll(
+                chat_id=db_user.user_id,
+                question=quiz_item['question'],
+                options=quiz_item['options'],
+                type='quiz',
+                correct_option_id=quiz_item['correct_option_id'],
+                is_anonymous=False
+            )
+        except Exception as e:
+            logger.error(f"Failed to send poll to user {db_user.user_id}: {e}")
+
+    logger.info(f"User {db_user.user_id} received interactive quizzes for {subject_text}.")
 
 
 async def handle_past_exams_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
