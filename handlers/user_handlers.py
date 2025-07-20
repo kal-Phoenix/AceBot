@@ -162,33 +162,44 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                         reply_markup=Keyboards.main_menu())
     elif text == MI.UPGRADE:
         await payment_handlers.upgrade_command(update, context)
-    # --- NEW: Route to Invite & Earn Menu ---
+    # --- Route to Invite & Earn Menu ---
     elif text == MI.INVITE_AND_EARN:
         await invite_handlers.handle_invite_menu(update, context)
-    # --- END NEW ---
+
+    # --- UPDATED: Professional Help and Contact Us Menus ---
     elif text == MI.HELP:
         help_text = (
-            "🆘 *Help Center* 🆘\n\n"
-            "Welcome to the AceBot Help Center\\! Here's a quick guide to what I can do for you:\n\n"
-            "📚 *Resources:* Access Text Books, Teacher's Guides, Short Notes, and Cheat Sheets\\. \n"
-            "🧠 *Quizzes:* Test your knowledge with interactive quizzes \\(Premium feature\\)\\. \n"
-            "🤖 *AI Chat:* Get instant help on subjects from our AI Tutor \\(Premium feature\\)\\. \n"
-            "📝 *Past Exams:* Find past entrance exams to practice with\\. \n"
-            "💡 *Tips & Motivation:* Get valuable Exam/Study tips and motivational quotes to keep you going\\. \n"
-            "💎 *Upgrade:* Unlock premium features for full access\\. \n"
-            "🤝 *Invite and Earn:* Share the bot with friends and earn rewards\\. \n\n"
-            "Simply use the main menu buttons to navigate\\. If you're stuck, restarting with /start usually helps\\!"
+            "✨ *Welcome to the AceBot Assistant* ✨\n\n"
+            "Hello\\! I'm here to help you ace your university entrance exams\\. Here is a breakdown of my features:\n\n"
+            "*Main Features*:\n\n"
+            "📚 *Resources* — Access a rich library of Textbooks, Teacher's Guides, and more\\. \n"
+            "📝 *Past Exams* — Practice with official past examination papers from previous years\\. \n"
+            "✨ *Motivation* — Get a dose of inspiration to keep you focused and driven\\.\n\n"
+            "*Premium Features* \\(💎\\):\n\n"
+            "🧠 *Interactive Quizzes* — Test your knowledge with subject\\-specific quizzes\\.\n"
+            "🤖 *AI Tutor* — Get instant, 24/7 help with difficult concepts from our advanced AI chat\\. \n"
+            "💡 *Study & Exam Tips* — Unlock exclusive strategies and tips to study smarter\\. \n"
+            "📝 *Short Notes & Cheat Sheets* — Access condensed study materials for quick revision\\.\n\n"
+            "*Community & Support*:\n\n"
+            "🤝 *Invite & Earn* — Share the bot with friends to earn rewards\\!\n"
+            "📧 *Contact Us* — Have a question or feedback? We're here to help\\. \n\n"
+            "Navigate using the menu below\\. For a fresh start, you can always type /start\\."
         )
         await update.message.reply_text(help_text, parse_mode='MarkdownV2', reply_markup=Keyboards.main_menu())
+
     elif text == MI.CONTACT_US:
         contact_text = (
-            "📧 *Contact Us* 📧\n\n"
-            "Have questions, feedback, or need support? We'd love to hear from you\\!\n\n"
-            "This bot was proudly developed by *Kaleab Dereje and the Phoenix Team* from Addis Ababa University \\(AAU\\)\\.\n\n"
-            "For support, bug reports, or suggestions, please reach out to our team\\. You can contact the lead developer at @Kaleab\\_dev or send an email to phoenixteam@aau\\.edu\\.et \\(example email\\)\\.\n\n"
-            "Your feedback helps us make AceBot better for everyone\\! 🚀"
+            "*Get in Touch* 🤝\n\n"
+            "We value your feedback and are here to provide support\\. Whether you have a suggestion, a question, or have encountered a technical issue, please don't hesitate to reach out\\.\n\n"
+            "*Development Team*:\n"
+            "This bot is a project by *Kaleab Dereje and the Phoenix Team* from Addis Ababa University \\(AAU\\), dedicated to enhancing the learning experience for Ethiopian students\\.\n\n"
+            "*Support Channels*:\n\n"
+            "• *Telegram*: For direct support, please contact the lead developer, @Kaleab\\_dev\\.\n"
+            "• *Email*: For formal inquiries or detailed feedback, you can email us at `phoenixteam.aau@email.com` \\(placeholder\\)\\.\n\n"
+            "We are constantly working to improve AceBot and your input is invaluable\\. Thank you for being a part of our community\\! 🚀"
         )
         await update.message.reply_text(contact_text, parse_mode='MarkdownV2', reply_markup=Keyboards.main_menu())
+
     elif text == MI.SHORT_NOTES:
         if not db_user.is_premium:
             await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())
@@ -206,12 +217,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("👋 Exiting AI Chat. How else can I help you?",
                                         reply_markup=Keyboards.main_menu())
 
-    # --- NEW: Handle Invite & Withdrawal flow ---
+    # --- Handle Invite & Withdrawal flow ---
     elif text == MI.SHARE_INVITE:
         await invite_handlers.handle_share_request(update, context)
     elif text == MI.REQUEST_WITHDRAWAL:
         await invite_handlers.handle_withdraw_request(update, context)
-    # --- END NEW ---
 
     # Handle pending actions
     elif db_user.pending_action == "awaiting_bank_for_withdrawal" and text in Config.AVAILABLE_BANKS:

@@ -37,7 +37,7 @@ async def check_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> boo
     return True
 
 
-# --- NEW: Main menu keyboard definition ---
+# --- Main menu keyboard definition ---
 ADMIN_MAIN_MENU = ReplyKeyboardMarkup([
     ["List Users", "View User"],
     ["Delete User", "Block User"],
@@ -66,7 +66,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"Admin {update.effective_user.id} started the admin bot.")
 
 
-# --- NEW: /stats command handler ---
+# --- /stats command handler ---
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Displays database statistics."""
     if not await check_admin(update, context):
@@ -94,7 +94,7 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"Admin {update.effective_user.id} requested stats.")
 
 
-# --- NEW: /broadcast command handler ---
+# --- /broadcast command handler ---
 async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Initiates the broadcast process."""
     if not await check_admin(update, context):
@@ -127,7 +127,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
     back_menu = ReplyKeyboardMarkup([["Back"]], resize_keyboard=True)
 
-    # --- MODIFIED: Handle pending broadcast message ---
+    # --- Handle pending broadcast message ---
     if context.user_data.get('pending_command') == 'broadcast_message':
         context.user_data.clear()
         await update.message.reply_text(f"Broadcasting message to all users. This may take a while...",
@@ -154,7 +154,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         logger.info(f"Admin {update.effective_user.id} finished broadcast. Sent: {sent_count}, Failed: {failed_count}")
         return
-    # --- END MODIFICATION ---
 
     # Handle main menu selections
     if 'pending_command' not in context.user_data:
@@ -341,11 +340,10 @@ def main():
 
     # Command handlers
     application.add_handler(CommandHandler("start", start))
-    # --- NEW: Add handlers for new commands ---
     application.add_handler(CommandHandler("stats", stats))
     application.add_handler(CommandHandler("broadcast", broadcast))
     application.add_handler(CommandHandler("cancel", cancel_action))
-    # --- END NEW ---
+
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     logger.info("Admin bot is running!")
