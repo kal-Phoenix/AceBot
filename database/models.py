@@ -2,9 +2,36 @@
 from pymongo import MongoClient
 from config import Config
 from datetime import datetime
+from certifi import where as certifi_where
+
+
+def _create_mongo_client():
+    """Create a MongoDB client using a trusted CA bundle, with localhost fallback."""
+    try:
+        client = MongoClient(
+            Config.MONGO_URI,
+            serverSelectionTimeoutMS=15000,
+            tlsCAFile=certifi_where(),
+        )
+        # Validate connection immediately so we can fallback if needed
+        client.admin.command('ping')
+        return client
+    except Exception as exc:
+        print(f"Standard MongoDB connection failed: {exc}")
+        print("Falling back to localhost MongoDB...")
+        client = MongoClient(
+            "mongodb://localhost:27017/",
+            serverSelectionTimeoutMS=5000,
+        )
+        try:
+            client.admin.command('ping')
+        except Exception as exc2:
+            print(f"Local MongoDB connection also failed: {exc2}")
+        return client
 
 class User:
-    collection = MongoClient(Config.MONGO_URI)[Config.DB_NAME]["users"]
+    _client = _create_mongo_client()
+    collection = _client[Config.DB_NAME]["users"]
 
     def __init__(self, user_id, username=None, full_name=None, stream=None, is_premium=False,
                  payment_pending=False, payment_proof=None, referral_balance=0.0,

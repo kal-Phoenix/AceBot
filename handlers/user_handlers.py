@@ -228,6 +228,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await invite_handlers.handle_bank_selection(update, context)
     elif db_user.pending_action == "awaiting_account_number_for_withdrawal":
         await invite_handlers.handle_account_number(update, context)
+    elif db_user.pending_action == "awaiting_account_holder_for_withdrawal":
+        await invite_handlers.handle_account_holder(update, context)
     elif db_user.pending_action == "await_payment_status_choice":
         await payment_handlers.handle_payment_status_choice(update, context)
     elif db_user.pending_action == "await_name_for_payment":

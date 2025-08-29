@@ -190,12 +190,15 @@ async def handle_withdraw_request(update: Update, context: ContextTypes.DEFAULT_
     logger.info(f"User {user.id} initiated a withdrawal request.")
 
 async def handle_bank_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Processes the selected bank and asks for the account number."""
+    """Processes the selected bank (via callback or plain text) and asks for the account number."""
     user = update.effective_user
     db_user = User.find(user.id)
-    query = update.callback_query
-    await query.answer()
-    bank_name = query.data.replace("bank_", "")
+    query = getattr(update, 'callback_query', None)
+    if query:
+        await query.answer()
+        bank_name = query.data.replace("bank_", "")
+    else:
+        bank_name = update.message.text
 
     if not db_user or db_user.pending_action != "awaiting_bank_for_withdrawal":
         await user_handlers.start(update, context)
@@ -209,21 +212,46 @@ async def handle_bank_selection(update: Update, context: ContextTypes.DEFAULT_TY
         f"🏦 *Selected Bank: {escape_markdown_v2_text(bank_name)}*\n\n"
         f"{escape_markdown_v2_text('Please enter your full account number:')}"
     )
-    await query.edit_message_text(
-        text=message,
-        parse_mode='MarkdownV2',
-        reply_markup=None
-    )
+    if query:
+        await query.edit_message_text(
+            text=message,
+            parse_mode='MarkdownV2',
+            reply_markup=None
+        )
+    else:
+        await update.message.reply_text(
+            text=message,
+            parse_mode='MarkdownV2',
+            reply_markup=ReplyKeyboardRemove()
+        )
     logger.info(f"User {user.id} selected bank: {bank_name}")
 
 async def handle_account_number(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Processes the account number and asks for the account holder's name."""
     user = update.effective_user
     db_user = User.find(user.id)
-    account_number = update.message.text
+    account_number = update.message.text.strip()
 
     if not db_user or db_user.pending_action != "awaiting_account_number_for_withdrawal":
         await user_handlers.start(update, context)
+        return
+
+    # Validate account number
+    if not account_number or len(account_number) < 5 or len(account_number) > 30:
+        await update.message.reply_text(
+            f"{escape_markdown_v2_text('Please enter a valid account number (5-30 characters).')}",
+            parse_mode='MarkdownV2'
+        )
+        return
+
+    # Remove any non-alphanumeric characters for security
+    account_number = ''.join(char for char in account_number if char.isalnum())
+    
+    if not account_number:
+        await update.message.reply_text(
+            f"{escape_markdown_v2_text('Please enter a valid account number with alphanumeric characters only.')}",
+            parse_mode='MarkdownV2'
+        )
         return
 
     bank_name = context.user_data.get('withdrawal_bank')
@@ -257,10 +285,27 @@ async def handle_account_holder(update: Update, context: ContextTypes.DEFAULT_TY
     """Processes the account holder's name and sends the withdrawal request to admins."""
     user = update.effective_user
     db_user = User.find(user.id)
-    account_holder = update.message.text
+    account_holder = update.message.text.strip()
 
     if not db_user or db_user.pending_action != "awaiting_account_holder_for_withdrawal":
         await user_handlers.start(update, context)
+        return
+
+    # Validate account holder name
+    if not account_holder or len(account_holder) < 2 or len(account_holder) > 100:
+        await update.message.reply_text(
+            f"{escape_markdown_v2_text('Please enter a valid account holder name (2-100 characters).')}",
+            parse_mode='MarkdownV2'
+        )
+        return
+
+    # Remove excessive whitespace and validate characters
+    account_holder = ' '.join(account_holder.split())
+    if not all(char.isalpha() or char.isspace() for char in account_holder):
+        await update.message.reply_text(
+            f"{escape_markdown_v2_text('Please enter a valid name using only letters and spaces.')}",
+            parse_mode='MarkdownV2'
+        )
         return
 
     bank_name = context.user_data.get('withdrawal_bank')

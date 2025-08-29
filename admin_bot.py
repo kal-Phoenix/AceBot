@@ -1,3 +1,4 @@
+#
 # admin_bot.py
 import logging
 import asyncio
@@ -36,6 +37,18 @@ async def check_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> boo
         return False
     return True
 
+
+# --- Global error handler ---
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Log the error and avoid crashing the application loop."""
+    try:
+        logger.exception("Unhandled exception while handling update: %s", context.error)
+        if isinstance(update, Update) and update.effective_chat:
+            # Avoid leaking internals to users; send a generic note to admins only if needed
+            pass
+    except Exception:
+        # Ensure we never throw inside the error handler
+        pass
 
 # --- Main menu keyboard definition ---
 ADMIN_MAIN_MENU = ReplyKeyboardMarkup([
@@ -345,6 +358,9 @@ def main():
     application.add_handler(CommandHandler("cancel", cancel_action))
 
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+    # Error handler
+    application.add_error_handler(error_handler)
 
     logger.info("Admin bot is running!")
     application.run_polling(allowed_updates=Update.ALL_TYPES)
