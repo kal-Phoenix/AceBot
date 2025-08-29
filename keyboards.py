@@ -164,6 +164,25 @@ class Keyboards:
             ], resize_keyboard=True)
 
     @staticmethod
+    def quiz_grades_menu():
+        """
+        Generates a menu for selecting quiz grades (9-12 or Mixed).
+        """
+        return ReplyKeyboardMarkup([
+            ["Grade 9", "Grade 10"],
+            ["Grade 11", "Grade 12"],
+            ["Mixed"],
+            [MI.BACK_TO_MAIN_MENU]
+        ], resize_keyboard=True)
+
+    @staticmethod
+    def quiz_post_menu():
+        """Menu shown after sending a quiz file."""
+        return ReplyKeyboardMarkup([
+            [MI.ANOTHER_QUIZ, MI.EXIT_QUIZZES]
+        ], resize_keyboard=True)
+
+    @staticmethod
     def past_exams_years_menu():
         """
         Generates a menu for selecting past exam years (2000-2017).

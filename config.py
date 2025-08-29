@@ -141,6 +141,8 @@ class MenuItems:
     CONTACT_US = "📧 Contact Us"
     INVITE_AND_EARN = "🤝 Invite and Earn"
     EXIT_AI_CHAT = "⬅️ Exit AI Chat"
+    ANOTHER_QUIZ = "🔁 Another Quiz"
+    EXIT_QUIZZES = "⬅️ Exit Quizzes"
     TEXT_BOOKS = "📖 Text Books"
     SHORT_NOTES = "📝 Short Notes"
     SHARE_INVITE = "↗️ Share Invite"

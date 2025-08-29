@@ -1,5 +1,6 @@
 # handlers/content_handlers.py
 import logging
+import random
 from telegram import Update
 from telegram.ext import ContextTypes
 from database.models import User
@@ -67,53 +68,93 @@ async def handle_quizzes_menu(update: Update, context: ContextTypes.DEFAULT_TYPE
     )
 
 
+async def _process_quiz_grade_selection(update: Update, context: ContextTypes.DEFAULT_TYPE, db_user: User, grade_text: str):
+    """After grade selection, fetch one quiz from Drive and show post options."""
+    if not db_user.is_premium:
+        await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())
+        return
+
+    subject_key = context.user_data.get("quiz_subject")
+    if not subject_key:
+        await handle_quizzes_menu(update, context)
+        return
+
+    # Determine grade filter
+    grade_value = None
+    if grade_text.startswith("Grade "):
+        try:
+            grade_value = int(grade_text.split()[1])
+        except Exception:
+            grade_value = None
+    mixed = grade_text.lower() == "mixed"
+
+    # Build Drive folder key
+    folder_key = f"{db_user.stream}_{subject_key}_quizzes"
+    folder_id = Config.DRIVE_FOLDER_IDS.get(folder_key)
+    if not folder_id or folder_id.startswith("YOUR_"):
+        await update.message.reply_text(
+            "Quizzes not available yet for this subject. Configure Drive folder IDs.",
+            reply_markup=Keyboards.main_menu()
+        )
+        return
+
+    files = drive_service.list_files(folder_id)
+    if not files:
+        await update.message.reply_text("No quiz files found.")
+        return
+
+    # Filter by grade if possible (simple filename contains strategy)
+    candidates = files
+    if not mixed and grade_value is not None:
+        candidates = [f for f in files if str(grade_value) in f.get('name', '')] or files
+
+    selected = random.choice(candidates)
+    name = selected.get('name')
+    link = selected.get('webViewLink') or selected.get('id')
+
+    await update.message.reply_text(
+        f"📄 {name}\n🔗 {link}",
+        reply_markup=Keyboards.quiz_post_menu()
+    )
+
+    db_user.pending_action = "quiz_post_options"
+    db_user.save()
+
 async def _process_quiz_subject_selection(update: Update, context: ContextTypes.DEFAULT_TYPE, db_user: User,
                                           subject_text: str):
-    """Processes the selected subject for quizzes and provides interactive quiz polls."""
+    """Processes subject, then prompts user to choose a grade for the quiz."""
     if not db_user.is_premium:
         await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())
         logger.info(f"Non-premium user {db_user.user_id} attempted to process Quizzes selection.")
         return
 
-    # Map display names to internal keys for the quiz data
     subject_key_map = {
-        "mathematics": "mathematics",
+        "mathematics": "math",
+        "english": "english",
+        "physics": "physics",
+        "biology": "biology",
+        "chemistry": "chemistry",
+        "aptitude": "aptitude",
+        "geography": "geography",
         "history": "history",
-        # Add other subjects here as quizzes are created
+        "economics": "economics",
     }
 
     subject_key = subject_key_map.get(subject_text.lower())
     if not subject_key:
         await update.message.reply_text(
-            f"Interactive quizzes for {subject_text.capitalize()} are not yet available. Please check back later.",
+            f"Quizzes for {subject_text.capitalize()} are not yet available.",
             reply_markup=Keyboards.main_menu())
         return
 
-    quiz_key = f"{db_user.stream}_{subject_key}"
-    questions = DUMMY_QUIZZES.get(quiz_key)
-
-    if not questions:
-        await update.message.reply_text("No quizzes found for this subject.", reply_markup=Keyboards.main_menu())
-        logger.info(f"No quiz data found for key {quiz_key} for user {db_user.user_id}.")
-        return
-
-    await update.message.reply_text(f"🧠 Here are your {subject_text.capitalize()} quizzes. Good luck!",
-                                    reply_markup=Keyboards.main_menu())
-
-    for quiz_item in questions:
-        try:
-            await context.bot.send_poll(
-                chat_id=db_user.user_id,
-                question=quiz_item['question'],
-                options=quiz_item['options'],
-                type='quiz',
-                correct_option_id=quiz_item['correct_option_id'],
-                is_anonymous=False
-            )
-        except Exception as e:
-            logger.error(f"Failed to send poll to user {db_user.user_id}: {e}")
-
-    logger.info(f"User {db_user.user_id} received interactive quizzes for {subject_text}.")
+    # Save and prompt for grade selection
+    context.user_data["quiz_subject"] = subject_key
+    db_user.pending_action = "select_quiz_grade"
+    db_user.save()
+    await update.message.reply_text(
+        "Choose the grade for the quiz:",
+        reply_markup=Keyboards.quiz_grades_menu()
+    )
 
 
 async def handle_past_exams_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):

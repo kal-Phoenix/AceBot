@@ -235,9 +235,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif db_user.pending_action == "await_name_for_payment":
         await payment_handlers.process_name_for_payment(update, context)
     elif db_user.pending_action == "select_exam_year" and text.isdigit():
+        # Keep pending_action so user can choose multiple years in the same menu
         await content_handlers._process_past_exam_year_selection(update, context, db_user, text)
-        db_user.pending_action = None
-        db_user.save()
     elif text in common_subjects and db_user.pending_action in ["select_notes_subject", "select_quiz_subject"]:
         if db_user.pending_action == "select_notes_subject":
             if not db_user.is_premium:
@@ -249,8 +248,24 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())
             else:
                 await content_handlers._process_quiz_subject_selection(update, context, db_user, text.lower())
-        db_user.pending_action = None
-        db_user.save()
+        # Keep pending for notes so users can pick multiple subjects in the same menu
+    elif db_user.pending_action == "select_quiz_grade" and (text.startswith("Grade ") or text.lower() == "mixed"):
+        await content_handlers._process_quiz_grade_selection(update, context, db_user, text)
+    elif db_user.pending_action == "quiz_post_options" and text in [MI.ANOTHER_QUIZ, MI.EXIT_QUIZZES]:
+        if text == MI.ANOTHER_QUIZ:
+            # Restart grade prompt with same subject
+            subject = context.user_data.get("quiz_subject")
+            if subject:
+                await update.message.reply_text("Choose the grade for the quiz:", reply_markup=Keyboards.quiz_grades_menu())
+                db_user.pending_action = "select_quiz_grade"
+                db_user.save()
+            else:
+                await content_handlers.handle_quizzes_menu(update, context)
+        else:
+            # Exit quizzes back to main menu
+            db_user.pending_action = None
+            db_user.save()
+            await update.message.reply_text("Exited Quizzes.", reply_markup=Keyboards.main_menu())
     elif db_user.pending_action == "ai_chat":
         if not db_user.is_premium:
             await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())
