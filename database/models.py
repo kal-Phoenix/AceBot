@@ -145,3 +145,5 @@ class User:
         """Deletes all users from the database and returns the number of deleted users."""
         result = cls.collection.delete_many({})
         return result.deleted_count
+
+

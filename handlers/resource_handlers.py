@@ -1,6 +1,6 @@
 # handlers/resource_handlers.py
 import logging
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from database.models import User
 from services.google_drive import GoogleDriveService
@@ -9,8 +9,10 @@ from keyboards import Keyboards
 from handlers import user_handlers # For calling start() on error
 
 logger = logging.getLogger(__name__)
-drive_service = GoogleDriveService()
 PREMIUM_MESSAGE = "This feature is for premium users only. Please upgrade to access this content. Tap '💎 Upgrade' from the main menu to learn more!"
+
+# Initialize Google Drive service
+drive_service = GoogleDriveService()
 
 async def handle_resources(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Displays the resources menu."""
@@ -36,7 +38,6 @@ async def handle_resource_selection(update: Update, context: ContextTypes.DEFAUL
         return
 
     # Route to specific handlers based on resource type
-    # NOTE: "📖 Text Books" is now handled in handle_message for consistency.
     if text == "📚 Teacher's Guide":
         await update.message.reply_text(
             "Select grade level for Teacher's Guide:",
@@ -56,7 +57,6 @@ async def handle_resource_selection(update: Update, context: ContextTypes.DEFAUL
         await user_handlers.start(update, context)  # Go back to main menu
         logger.info(f"User {user.id} navigated back to main menu from resources.")
     else:
-        # This else block should ideally not be hit if main.py routing is correct.
         await update.message.reply_text("Invalid resource type selected.")
         logger.warning(f"User {user.id} sent invalid resource type to handle_resource_selection: {text}")
 
@@ -96,7 +96,6 @@ async def handle_grade_selection(update: Update, context: ContextTypes.DEFAULT_T
         resource_type = "teachers_guide"
         display_name = "Teacher's Guides"
     else:
-        # This should ideally not be hit if the MessageHandler in main.py is correct.
         await update.message.reply_text("Invalid selection. Please choose a valid grade button.")
         logger.warning(f"User {user.id} sent invalid grade selection format: {text}")
         return
@@ -114,18 +113,27 @@ async def handle_grade_selection(update: Update, context: ContextTypes.DEFAULT_T
         logger.info(f"No valid folder ID found or placeholder used for {folder_id_key} for user {user.id}.")
         return
 
-    files = drive_service.list_files(folder_id)  # Fetch files from Google Drive
+    files = drive_service.list_files(folder_id)
     if not files:
-        await update.message.reply_text(f"No resources available for {display_name} Grade {grade}.")
+        await update.message.reply_text(f"No {display_name.lower()} found for Grade {grade}.")
         logger.info(f"No files found in folder {folder_id} for user {user.id}.")
         return
 
-    message = f"📚 {display_name} for Grade {grade} ({db_user.stream.capitalize()}):\n\n"
+    message = f"📚 {display_name} Grade {grade} ({db_user.stream.capitalize()}):\n\n"
+    buttons = []
+    
     for file in files:
-        message += f"📄 {file['name']}\n🔗 {file['webViewLink']}\n\n"
+        message += f"📄 {file['name']}\n"
+        
+        # Add view button (textbooks and teachers guides are free)
+        buttons.append([InlineKeyboardButton(f"👁️ View {file['name']}", url=file['view_only_url'])])
+        message += "\n"
 
-    await update.message.reply_text(message, reply_markup=Keyboards.resources_menu())
-    logger.info(f"User {user.id} received {display_name} for Grade {grade}.")
+    await update.message.reply_text(
+        message, 
+        reply_markup=InlineKeyboardMarkup(buttons) if buttons else Keyboards.resources_menu()
+    )
+    logger.info(f"User {user.id} received {display_name} for grade {grade}.")
 
 async def handle_short_notes(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Prompts the user to select a subject for short notes."""
@@ -156,13 +164,24 @@ async def handle_short_notes(update: Update, context: ContextTypes.DEFAULT_TYPE)
 async def _process_notes_subject_selection(update: Update, context: ContextTypes.DEFAULT_TYPE, db_user: User,
                                            subject_text: str):
     """Processes the selected subject for short notes and provides links."""
-    # PREMIUM CHECK for Short Notes (redundant if handle_short_notes already checks, but safe)
+    # PREMIUM CHECK for Short Notes - Block access entirely for non-premium users
     if not db_user.is_premium:
-        await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())
-        logger.info(f"Non-premium user {db_user.user_id} attempted to process Short Notes selection.")
+        await update.message.reply_text(
+            "✨ *Premium Content* ✨\n\n"
+            "📚 *Short Notes* are exclusive to our premium members!\n\n"
+            "🎯 *What you'll get:*\n"
+            "• Comprehensive study notes\n"
+            "• Subject-specific materials\n"
+            "• High-quality content\n\n"
+            "💎 *Upgrade to Premium* to unlock this content and much more!\n\n"
+            "🚀 Ready to boost your studies?",
+            parse_mode='Markdown',
+            reply_markup=Keyboards.main_menu()
+        )
+        logger.info(f"Non-premium user {db_user.user_id} attempted to access Short Notes.")
         return
 
-    # Map display names to internal keys for folder IDs
+    # Map display names to internal keys
     subject_map = {
         "mathematics": "math",
         "english": "english",
@@ -175,7 +194,7 @@ async def _process_notes_subject_selection(update: Update, context: ContextTypes
         "economics": "economics"
     }
 
-    subject_key = subject_map.get(subject_text.lower())  # Ensure lower case for mapping
+    subject_key = subject_map.get(subject_text.lower())
     if not subject_key:
         await update.message.reply_text("Invalid subject selected for notes.")
         logger.warning(f"User {db_user.user_id} sent invalid notes subject: {subject_text}")
@@ -184,27 +203,36 @@ async def _process_notes_subject_selection(update: Update, context: ContextTypes
     # Construct the key for Config.DRIVE_FOLDER_IDS
     folder_key = f"{db_user.stream}_{subject_key}_notes"
     folder_id = Config.DRIVE_FOLDER_IDS.get(folder_key)
-
+    
     if not folder_id or folder_id.startswith("YOUR_"):  # Check for placeholder IDs
         await update.message.reply_text(
-            f"Notes not available for {subject_text.capitalize()} yet. "
+            f"Short notes for {subject_text.capitalize()} not available for {db_user.stream.capitalize()} stream yet. "
             f"Please ensure the Google Drive folder ID is configured correctly in config.py."
         )
         logger.info(f"No valid folder ID found or placeholder used for {folder_key} for user {db_user.user_id}.")
         return
-
-    files = drive_service.list_files(folder_id)
+    
+    files = drive_service.list_files(folder_id, is_premium_content=True)  # Short notes are premium
     if not files:
-        await update.message.reply_text("No notes available for this subject.")
+        await update.message.reply_text(f"No short notes found for {subject_text.capitalize()}.")
         logger.info(f"No files found in folder {folder_id} for user {db_user.user_id}.")
         return
-
-    message = f"📝 {subject_text.capitalize()} Notes ({db_user.stream.capitalize()}):\n\n"
+    
+    message = f"📝 Short Notes - {subject_text.capitalize()} ({db_user.stream.capitalize()}):\n\n"
+    buttons = []
+    
     for file in files:
-        message += f"📄 {file['name']}\n🔗 {file['webViewLink']}\n\n"
+        message += f"📄 {file['name']}\n"
+        
+        # Add view button (short notes are premium - view only, no download/screenshot)
+        buttons.append([InlineKeyboardButton(f"👁️ View {file['name']}", url=file['view_only_url'])])
+        message += "\n"
 
-    await update.message.reply_text(message, reply_markup=Keyboards.resources_menu())
-    logger.info(f"User {db_user.user_id} received notes for {subject_text}.")
+    await update.message.reply_text(
+        message, 
+        reply_markup=InlineKeyboardMarkup(buttons) if buttons else Keyboards.resources_menu()
+    )
+    logger.info(f"User {db_user.user_id} accessed short notes for {subject_text}.")
 
 async def handle_cheat_sheets(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Prompts the user to select a cheat sheet type."""
@@ -216,10 +244,21 @@ async def handle_cheat_sheets(update: Update, context: ContextTypes.DEFAULT_TYPE
         logger.warning(f"User {user.id} inconsistent state, restarting flow for cheat sheets.")
         return
 
-    # PREMIUM CHECK for Cheat Sheets (redundant if handle_resource_selection already checks, but safe)
+    # PREMIUM CHECK for Cheat Sheets - Block access entirely for non-premium users
     if not db_user.is_premium:
-        await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())
-        logger.info(f"Non-premium user {user.id} attempted to access Cheat Sheets directly.")
+        await update.message.reply_text(
+            "✨ *Premium Content* ✨\n\n"
+            "🧮 *Cheat Sheets* are exclusive to our premium members!\n\n"
+            "🎯 *What you'll get:*\n"
+            "• Quick reference guides\n"
+            "• Formula collections\n"
+            "• Study shortcuts\n\n"
+            "💎 *Upgrade to Premium* to unlock this content and much more!\n\n"
+            "🚀 Ready to boost your studies?",
+            parse_mode='Markdown',
+            reply_markup=Keyboards.main_menu()
+        )
+        logger.info(f"Non-premium user {user.id} attempted to access Cheat Sheets.")
         return
 
     await update.message.reply_text(
@@ -245,48 +284,55 @@ async def handle_cheat_sheet_selection(update: Update, context: ContextTypes.DEF
         logger.info(f"Non-premium user {user.id} attempted to process Cheat Sheets selection.")
         return
 
-    # Map display names (with emojis) to internal keys for folder IDs
-    subject_map = {
-        "🧮 Math Formulas": "math_cheats",
-        "📝 English Tips": "english_cheats",
-        "⚛ Physics Formulas": "physics_cheats",
-        "🧬 Biology Cheats": "biology_cheats",
-        "🧪 Chemistry Cheats": "chemistry_cheats",
-        "🧠 Aptitude Tricks": "aptitude_cheats",
-        "🗺 Geography Cheats": "geography_cheats",
-        "📜 History Cheats": "history_cheats",
-        "💹 Economics Cheats": "economics_cheats"
+    # Map display names to subject keys
+    subject_key_map = {
+        "🧮 Math Formulas": "math",
+        "📝 English Tips": "english",
+        "⚛ Physics Formulas": "physics",
+        "🧬 Biology Cheats": "biology",
+        "🧪 Chemistry Cheats": "chemistry",
+        "🧠 Aptitude Tricks": "aptitude",
+        "🗺 Geography Cheats": "geography",
+        "📜 History Cheats": "history",
+        "💹 Economics Cheats": "economics"
     }
 
-    # Get the folder key suffix based on the exact input text
-    folder_key_suffix = subject_map.get(text)
-    if not folder_key_suffix:
+    subject_key = subject_key_map.get(text)
+    if not subject_key:
         await update.message.reply_text("Invalid cheat sheet selection.")
         logger.warning(f"User {user.id} sent invalid cheat sheet selection: {text}")
         return
 
-    folder_key = f"{db_user.stream}_{folder_key_suffix}"
+    # Construct the key for Config.DRIVE_FOLDER_IDS
+    folder_key = f"{db_user.stream}_{subject_key}_cheats"
     folder_id = Config.DRIVE_FOLDER_IDS.get(folder_key)
-
+    
     if not folder_id or folder_id.startswith("YOUR_"):  # Check for placeholder IDs
         await update.message.reply_text(
-            f"Cheat sheets not available for {text.replace('🧮 ', '').replace('📝 ', '').replace('⚛ ', '').replace('🧬 ', '').replace('🧪 ', '').replace('🧠 ', '').replace('🗺 ', '').replace('📜 ', '').replace('💹 ', '')} yet. "
+            f"Cheat sheets for {subject_key.capitalize()} not available for {db_user.stream.capitalize()} stream yet. "
             f"Please ensure the Google Drive folder ID is configured correctly in config.py."
         )
-        logger.info(f"No valid folder ID found or placeholder used for {folder_key} for user {db_user.user_id}.")
+        logger.info(f"No valid folder ID found or placeholder used for {folder_key} for user {user.id}.")
         return
-
-    files = drive_service.list_files(folder_id)
+    
+    files = drive_service.list_files(folder_id, is_premium_content=True)  # Cheat sheets are premium
     if not files:
-        await update.message.reply_text("No cheat sheets found.")
-        logger.info(f"No files found in folder {folder_id} for user {db_user.user_id}.")
+        await update.message.reply_text(f"No cheat sheets found for {subject_key.capitalize()}.")
+        logger.info(f"No files found in folder {folder_id} for user {user.id}.")
         return
-
-    # Extract the display name by removing the emoji prefix
-    display_name = text.replace('🧮 ', '').replace('📝 ', '').replace('⚛ ', '').replace('🧬 ', '').replace('🧪 ', '').replace('🧠 ', '').replace('🗺 ', '').replace('📜 ', '').replace('💹 ', '')
-    message = f"📚 {display_name}:\n\n"
+    
+    message = f"🧮 Cheat Sheets - {subject_key.capitalize()} ({db_user.stream.capitalize()}):\n\n"
+    buttons = []
+    
     for file in files:
-        message += f"📄 {file['name']}\n🔗 {file['webViewLink']}\n\n"
+        message += f"📄 {file['name']}\n"
+        
+        # Add view button (cheat sheets are premium - view only, no download/screenshot)
+        buttons.append([InlineKeyboardButton(f"👁️ View {file['name']}", url=file['view_only_url'])])
+        message += "\n"
 
-    await update.message.reply_text(message, reply_markup=Keyboards.resources_menu())
-    logger.info(f"User {user.id} received cheat sheets for {display_name}.")
+    await update.message.reply_text(
+        message, 
+        reply_markup=InlineKeyboardMarkup(buttons) if buttons else Keyboards.resources_menu()
+    )
+    logger.info(f"User {user.id} accessed cheat sheets for {subject_key}.")

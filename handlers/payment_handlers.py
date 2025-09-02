@@ -319,5 +319,3 @@ async def decline_payment_callback(update: Update, context: ContextTypes.DEFAULT
         parse_mode='MarkdownV2',
         reply_markup=None
     )
-
-from handlers import user_handlers

@@ -1,9 +1,10 @@
 # main.py
 import logging
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, PicklePersistence, CallbackQueryHandler
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, PicklePersistence, CallbackQueryHandler, ContextTypes
 
 from database.models import User
 from handlers import user_handlers, payment_handlers, resource_handlers, content_handlers, invite_handlers
+
 from config import Config, MenuItems
 from telegram import Update
 
@@ -12,6 +13,8 @@ logging.basicConfig(
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
+
+
 
 def main():
     persistence = PicklePersistence(filepath="bot_data.pickle")
@@ -70,10 +73,10 @@ def main():
                                                  pattern=r"^(share_invite|request_withdrawal|back_to_main_menu|back_to_invite_menu)$"))
     application.add_handler(CallbackQueryHandler(invite_handlers.handle_bank_selection,
                                                  pattern=r"^bank_"))
-
+    
     # General text handler - MUST BE LAST among message handlers
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, user_handlers.handle_message))
-
+    
     logger.info("Bot is running with updated features!")
 
     application.run_polling(allowed_updates=Update.ALL_TYPES)

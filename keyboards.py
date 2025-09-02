@@ -183,6 +183,16 @@ class Keyboards:
         ], resize_keyboard=True)
 
     @staticmethod
+    def past_exams_organization_menu():
+        """
+        Generates a menu for selecting past exam organization method.
+        """
+        return ReplyKeyboardMarkup([
+            [MI.ORGANIZED_BY_YEAR, MI.ORGANIZED_BY_TOPICS],
+            [MI.BACK_TO_MAIN_MENU]
+        ], resize_keyboard=True)
+
+    @staticmethod
     def past_exams_years_menu():
         """
         Generates a menu for selecting past exam years (2000-2017).
@@ -193,6 +203,27 @@ class Keyboards:
             keyboard.append([str(year) for year in years[i:i + 4]])
         keyboard.append([MI.BACK_TO_MAIN_MENU])
         return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+
+    @staticmethod
+    def past_exams_topics_menu(stream: str):
+        """
+        Generates a menu for selecting past exam topics based on the user's stream.
+        :param stream: The user's academic stream ('natural' or 'social').
+        """
+        if stream == "natural":
+            return ReplyKeyboardMarkup([
+                ["Mathematics", "English"],
+                ["Physics", "Biology"],
+                ["Chemistry", "Aptitude"],
+                [MI.BACK_TO_MAIN_MENU]
+            ], resize_keyboard=True)
+        else:  # social stream
+            return ReplyKeyboardMarkup([
+                ["Mathematics", "English"],
+                ["Geography", "History"],
+                ["Economics", "Aptitude"],
+                [MI.BACK_TO_MAIN_MENU]
+            ], resize_keyboard=True)
 
     @staticmethod
     def ai_chat_menu():

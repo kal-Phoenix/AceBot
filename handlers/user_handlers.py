@@ -19,11 +19,16 @@ gemini_service = GeminiService()
 
 # Define messages
 PREMIUM_MESSAGE = "This feature is for premium users only. Please upgrade to access this content. Tap '💎 Upgrade' from the main menu to learn more!"
-YOUR_USERNAME = "@YourUsername"
 ASSIGNMENT_HELP_DESCRIPTION = (
-    "🌟 Assignment Help for Entrance Exams 🌟\n"
-    "We know entrance exam prep can feel overwhelming, but don’t stress! We’re here to support you with personalized assistance. "
-    "Contact me for help with assignments or study tips tailored to your exam. Reach out at {} and let’s work together to succeed! 😊"
+    "📚 Academic Support Services 📚\n\n"
+    "Struggling with challenging assignments or need guidance on exam preparation? Our experienced academic support team is here to provide personalized assistance tailored to your specific needs.\n\n"
+    "We offer:\n"
+    "• Assignment guidance and problem-solving strategies\n"
+    "• Subject-specific study techniques\n"
+    "• Exam preparation tips and best practices\n"
+    "• Concept clarification and learning support\n\n"
+    "For professional academic assistance, please contact our support team at @WAGM12345\n\n"
+    "Let us help you achieve your academic goals! 🎯"
 )
 
 
@@ -32,12 +37,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     db_user = User.find(user.id)
 
-    # --- NEW: Enforce user blocking ---
+    # Enforce user blocking
     if db_user and db_user.blocked:
         await update.message.reply_text("Your account has been suspended. Please contact support.")
         logger.warning(f"Blocked user {user.id} tried to use /start.")
         return
-    # --- END NEW ---
 
     referral_code = None
     if context.args:
@@ -107,12 +111,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     db_user = User.find(user.id)
 
-    # --- NEW: Enforce user blocking ---
+    # Enforce user blocking
     if db_user and db_user.blocked:
         await update.message.reply_text("Your account has been suspended. Please contact support.")
         logger.warning(f"Blocked user {user.id} tried to send a message: {text}")
         return
-    # --- END NEW ---
 
     if not db_user or not db_user.stream:
         await start(update, context)
@@ -158,15 +161,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
         await content_handlers.handle_study_tips(update, context)
     elif text == MI.ASSIGNMENT_HELP:
-        await update.message.reply_text(ASSIGNMENT_HELP_DESCRIPTION.format(YOUR_USERNAME),
+        await update.message.reply_text(ASSIGNMENT_HELP_DESCRIPTION,
                                         reply_markup=Keyboards.main_menu())
     elif text == MI.UPGRADE:
         await payment_handlers.upgrade_command(update, context)
-    # --- Route to Invite & Earn Menu ---
     elif text == MI.INVITE_AND_EARN:
         await invite_handlers.handle_invite_menu(update, context)
-
-    # --- UPDATED: Professional Help and Contact Us Menus ---
     elif text == MI.HELP:
         help_text = (
             "✨ *Welcome to the AceBot Assistant* ✨\n\n"
@@ -189,14 +189,15 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif text == MI.CONTACT_US:
         contact_text = (
-            "*Get in Touch* 🤝\n\n"
-            "We value your feedback and are here to provide support\\. Whether you have a suggestion, a question, or have encountered a technical issue, please don't hesitate to reach out\\.\n\n"
-            "*Development Team*:\n"
-            "This bot is a project by *Kaleab Dereje and the Phoenix Team* from Addis Ababa University \\(AAU\\), dedicated to enhancing the learning experience for Ethiopian students\\.\n\n"
+            "*Contact Support* 📞\n\n"
+            "We are committed to providing exceptional support and assistance to our users\\. Our dedicated support team is available to address your inquiries, technical issues, and feedback\\.\n\n"
+            "*About AceBot*:\n"
+            "AceBot is developed by Kaleab Dereje and the Phoenix Team from Addis Ababa University \\(AAU\\), with the mission to enhance educational outcomes for Ethiopian university entrance exam candidates\\.\n\n"
             "*Support Channels*:\n\n"
-            "• *Telegram*: For direct support, please contact the lead developer, @Kaleab\\_dev\\.\n"
-            "• *Email*: For formal inquiries or detailed feedback, you can email us at `phoenixteam.aau@email.com` \\(placeholder\\)\\.\n\n"
-            "We are constantly working to improve AceBot and your input is invaluable\\. Thank you for being a part of our community\\! 🚀"
+            "• *Telegram Support*: @a\\_d\\_min\\_support\n"
+            "• *Email Support*: kaleabnt369@gmail\\.com\n\n"
+            "For the fastest response, please use Telegram support\\. We typically respond within 24 hours\\.\n\n"
+            "Thank you for choosing AceBot for your educational journey\\! 🎓"
         )
         await update.message.reply_text(contact_text, parse_mode='MarkdownV2', reply_markup=Keyboards.main_menu())
 
@@ -217,7 +218,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("👋 Exiting AI Chat. How else can I help you?",
                                         reply_markup=Keyboards.main_menu())
 
-    # --- Handle Invite & Withdrawal flow ---
     elif text == MI.SHARE_INVITE:
         await invite_handlers.handle_share_request(update, context)
     elif text == MI.REQUEST_WITHDRAWAL:
@@ -234,9 +234,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await payment_handlers.handle_payment_status_choice(update, context)
     elif db_user.pending_action == "await_name_for_payment":
         await payment_handlers.process_name_for_payment(update, context)
+    elif db_user.pending_action == "select_exam_organization" and text in [MI.ORGANIZED_BY_YEAR, MI.ORGANIZED_BY_TOPICS]:
+        await content_handlers._process_past_exam_organization_selection(update, context, db_user, text)
     elif db_user.pending_action == "select_exam_year" and text.isdigit():
         # Keep pending_action so user can choose multiple years in the same menu
         await content_handlers._process_past_exam_year_selection(update, context, db_user, text)
+    elif db_user.pending_action == "select_exam_topic" and text in common_subjects:
+        await content_handlers._process_past_exam_topic_selection(update, context, db_user, text)
     elif text in common_subjects and db_user.pending_action in ["select_notes_subject", "select_quiz_subject"]:
         if db_user.pending_action == "select_notes_subject":
             if not db_user.is_premium:
