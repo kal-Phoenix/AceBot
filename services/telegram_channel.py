@@ -42,9 +42,11 @@ class TelegramChannelService:
         try:
             # Build content key for file_id mapping
             content_key = self._build_content_key(stream, resource_type, subject, grade, year)
+            logger.info(f"Built content key: {content_key} from stream={stream}, resource_type={resource_type}, grade={grade}")
             
             # Get file_ids from mapping
             file_ids = self._get_file_ids_mapping(content_key)
+            logger.info(f"Found {len(file_ids)} files for key: {content_key}")
             
             if not file_ids:
                 logger.info(f"No content found for key: {content_key}")
@@ -225,9 +227,9 @@ class TelegramChannelService:
     async def get_past_exams_by_year(self, context: ContextTypes.DEFAULT_TYPE, 
                                     stream: str, year: str, user_id: int = None) -> List[Dict]:
         """Get past exams for a specific year."""
-        # Years 2014-2017 are premium
+        # Years 2002-2017 are premium, only 2000-2001 are free
         year_int = int(year) if isinstance(year, str) else year
-        is_premium = year_int >= 2014
+        is_premium = year_int >= 2002
         
         return await self.get_content(
             context=context,

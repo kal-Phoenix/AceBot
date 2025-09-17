@@ -107,6 +107,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Handles all general text messages, routing them based on current user state or menu selections.
     """
+    # Check if message exists
+    if not update.message or not update.message.text:
+        return
+    
     text = update.message.text
     user = update.effective_user
     db_user = User.find(user.id)

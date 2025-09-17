@@ -90,7 +90,7 @@ async def handle_grade_selection(update: Update, context: ContextTypes.DEFAULT_T
 
     # Determine resource type based on button text
     if "Textbooks" in text:
-        resource_type = "textbooks"
+        resource_type = "textbook"
         display_name = "Textbooks"
     elif "Guide" in text:
         resource_type = "guide"
@@ -143,19 +143,32 @@ async def handle_curriculum_selection(update: Update, context: ContextTypes.DEFA
         return
     
     # Send files based on curriculum choice
-    if resource_type == "textbooks":
+    if resource_type == "textbook":
         sent_files = await channel_service.get_textbooks(context, db_user.stream, f"{grade}_{curriculum}", user.id)
     elif resource_type == "guide":
         sent_files = await channel_service.get_teachers_guide(context, db_user.stream, f"{grade}_{curriculum}", user.id)
     else:
         sent_files = []
     
-    if not sent_files:
+    # Check if files are configured first
+    content_key = f"{db_user.stream}_{resource_type}_grade{grade}_{curriculum}"
+    configured_files = Config.FILE_IDS.get(content_key, [])
+    
+    if not configured_files:
         await update.message.reply_text(
-            f"No {display_name.lower()} found for Grade {grade} {curriculum.capitalize()} Curriculum ({db_user.stream.capitalize()}) yet. "
-            f"Please check the content or contact support.",
+            f"📄 No {display_name.lower()} configured yet for Grade {grade} {curriculum.capitalize()} Curriculum ({db_user.stream.capitalize()}).\n\n"
+            f"Please contact admin to add these files.",
             reply_markup=Keyboards.resources_menu()
         )
+        logger.info(f"No file_ids configured for {content_key}")
+        return
+    
+    if not sent_files:
+        await update.message.reply_text(
+            f"📄 {display_name} files have issues (invalid file_ids). Please contact admin to fix the configuration.",
+            reply_markup=Keyboards.resources_menu()
+        )
+        logger.info(f"Service returned empty for configured files: {content_key}")
         return
     
     # Send confirmation message
@@ -246,15 +259,28 @@ async def _process_notes_subject_selection(update: Update, context: ContextTypes
         logger.warning(f"User {db_user.user_id} sent invalid notes subject: {subject_text}")
         return
 
+    # Check if files are configured first
+    content_key = f"{db_user.stream}_notes_{subject_key}"
+    configured_files = Config.FILE_IDS.get(content_key, [])
+    
+    if not configured_files:
+        await update.message.reply_text(
+            f"📄 No {subject_text.capitalize()} notes configured yet for {db_user.stream.capitalize()} stream.\n\n"
+            f"Please contact admin to add these files.",
+            reply_markup=Keyboards.resources_menu()
+        )
+        logger.info(f"No file_ids configured for {content_key}")
+        return
+    
     # Forward files directly from private channel to user
     forwarded_content = await channel_service.get_notes(context, db_user.stream, subject_key, db_user.user_id)
     
     if not forwarded_content:
         await update.message.reply_text(
-            f"Short notes for {subject_text.capitalize()} not available for {db_user.stream.capitalize()} stream yet. "
-            f"Please check the content or contact support."
+            f"📄 {subject_text.capitalize()} notes files have issues (invalid file_ids). Please contact admin to fix the configuration.",
+            reply_markup=Keyboards.resources_menu()
         )
-        logger.info(f"No notes content found for {subject_key} {db_user.stream} for user {db_user.user_id}.")
+        logger.info(f"Service returned empty for configured files: {content_key}")
         return
     
     # Send confirmation message after sending files
@@ -345,15 +371,28 @@ async def handle_cheat_sheet_selection(update: Update, context: ContextTypes.DEF
         logger.warning(f"User {user.id} sent invalid cheat sheet selection: {text}")
         return
 
+    # Check if files are configured first
+    content_key = f"{db_user.stream}_cheats_{subject_key}"
+    configured_files = Config.FILE_IDS.get(content_key, [])
+    
+    if not configured_files:
+        await update.message.reply_text(
+            f"📄 No {subject_key.capitalize()} cheat sheets configured yet for {db_user.stream.capitalize()} stream.\n\n"
+            f"Please contact admin to add these files.",
+            reply_markup=Keyboards.resources_menu()
+        )
+        logger.info(f"No file_ids configured for {content_key}")
+        return
+    
     # Forward files directly from private channel to user
     forwarded_content = await channel_service.get_cheat_sheets(context, db_user.stream, subject_key, user.id)
     
     if not forwarded_content:
         await update.message.reply_text(
-            f"Cheat sheets for {subject_key.capitalize()} not available for {db_user.stream.capitalize()} stream yet. "
-            f"Please check the content or contact support."
+            f"📄 {subject_key.capitalize()} cheat sheets files have issues (invalid file_ids). Please contact admin to fix the configuration.",
+            reply_markup=Keyboards.resources_menu()
         )
-        logger.info(f"No cheat sheets content found for {subject_key} {db_user.stream} for user {user.id}.")
+        logger.info(f"Service returned empty for configured files: {content_key}")
         return
     
     # Send confirmation message after sending files

@@ -184,8 +184,8 @@ async def _process_past_exam_year_selection(update: Update, context: ContextType
         logger.warning(f"User {db_user.user_id} sent non-integer exam year: {year_text}")
         return
 
-    # PREMIUM CHECK for specific Past Exam Years (2014, 2015, 2016, 2017)
-    if year in [2014, 2015, 2016, 2017] and not db_user.is_premium:
+    # PREMIUM CHECK for Past Exam Years (2002-2017, only 2000-2001 are free)
+    if year >= 2002 and not db_user.is_premium:
         await update.message.reply_text(
             "✨ *Premium Content* ✨\n\n"
             f"📚 *Past Exam {year}* is exclusive to our premium members!\n\n"
@@ -201,15 +201,29 @@ async def _process_past_exam_year_selection(update: Update, context: ContextType
         logger.info(f"Non-premium user {db_user.user_id} attempted to access premium exam year {year}.")
         return
 
+    # Check if files are configured first
+    content_key = f"{db_user.stream}_pastexam_{year}"
+    configured_files = Config.FILE_IDS.get(content_key, [])
+    
+    if not configured_files:
+        await update.message.reply_text(
+            f"📄 No {year} past exam files configured yet for {db_user.stream.capitalize()} stream.\n\n"
+            f"Please contact admin to add these files.",
+            reply_markup=Keyboards.main_menu()
+        )
+        logger.info(f"No file_ids configured for {content_key}")
+        return
+    
     # Send files directly to user
     sent_files = await channel_service.get_past_exams_by_year(context, db_user.stream, year, db_user.user_id)
 
     if not sent_files:
+        # This means the service returned empty - could be invalid file_ids
         await update.message.reply_text(
-            f"Past exam for {year} not available for {db_user.stream.capitalize()} stream yet. "
-            f"Please check the content or contact support."
+            f"📄 {year} past exam files have issues (invalid file_ids). Please contact admin to fix the configuration.",
+            reply_markup=Keyboards.main_menu()
         )
-        logger.info(f"No past exam content found for {year} {db_user.stream} for user {db_user.user_id}.")
+        logger.info(f"Service returned empty for configured files: {content_key}")
         return
 
     # Send confirmation message after sending files

@@ -60,7 +60,7 @@ def main():
         filters.TEXT & ~filters.COMMAND & filters.Regex(r".+"),
         lambda update, context: (
             invite_handlers.handle_account_holder(update, context)
-            if User.find(update.effective_user.id) and User.find(update.effective_user.id).pending_action == "awaiting_account_holder_for_withdrawal"
+            if update.effective_user and User.find(update.effective_user.id) and User.find(update.effective_user.id).pending_action == "awaiting_account_holder_for_withdrawal"
             else user_handlers.handle_message(update, context)
         )
     ))
