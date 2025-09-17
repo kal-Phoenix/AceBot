@@ -4,7 +4,7 @@ import logging
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import ContextTypes
 from database.models import User
-from services.google_drive import GoogleDriveService
+from services.telegram_channel import TelegramChannelService
 from services.gemini_ai import GeminiService
 from config import Config, MenuItems as MI
 from keyboards import Keyboards
@@ -14,7 +14,7 @@ from handlers import payment_handlers, resource_handlers, content_handlers, invi
 logger = logging.getLogger(__name__)
 
 # Initialize services
-drive_service = GoogleDriveService()
+channel_service = TelegramChannelService()
 gemini_service = GeminiService()
 
 # Define messages

@@ -35,6 +35,11 @@ def main():
         MessageHandler(filters.Regex(r"^Grade (9|10|11|12) (Textbooks|Guide)$"),
                        resource_handlers.handle_grade_selection)
     )
+    
+    application.add_handler(
+        MessageHandler(filters.Regex(r"^(Old Curriculum|New Curriculum)$"),
+                       resource_handlers.handle_curriculum_selection)
+    )
 
     application.add_handler(
         MessageHandler(filters.Regex(r"^(🧮 Math Formulas|📝 English Tips|⚛ Physics Formulas|"

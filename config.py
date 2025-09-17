@@ -24,8 +24,14 @@ class Config:
     if GEMINI_API_KEY == "YOUR_GEMINI_API_KEY_HERE":
         print("WARNING: GEMINI_API_KEY is not set in environment variables or .env file. Please set it.")
 
-    # Google Drive Service Account Credentials Path
+    # Google Drive Service Account Credentials Path (DEPRECATED - keeping for migration)
     GOOGLE_DRIVE_CREDENTIALS_PATH = os.getenv("GOOGLE_DRIVE_CREDENTIALS_PATH", "credentials.json")
+    
+    # Telegram Channel Configuration (NEW)
+    CONTENT_CHANNEL_USERNAME = os.getenv("CONTENT_CHANNEL_USERNAME", "@acebot_content")
+    CONTENT_CHANNEL_ID = os.getenv("CONTENT_CHANNEL_ID", "-1001234567890")
+    if CONTENT_CHANNEL_ID == "-1001234567890":
+        print("WARNING: CONTENT_CHANNEL_ID is not set in environment variables or .env file. Please set it.")
 
     ADMIN_BOT_TOKEN = os.getenv("ADMIN_BOT_TOKEN", "YOUR_ADMIN_BOT_TOKEN_HERE")
     if ADMIN_BOT_TOKEN == "YOUR_ADMIN_BOT_TOKEN_HERE":
@@ -63,57 +69,148 @@ class Config:
         print("WARNING: BENEFICIARY_NAME is not set in environment variables or .env file. Please set it.")
 
     # =============================================================================
-    # 📁 GOOGLE DRIVE FOLDER IDS CONFIGURATION
+    # 📁 FILE IDS CONFIGURATION (TELEGRAM CHANNEL SYSTEM)
     # =============================================================================
-    # This section contains all Google Drive folder IDs for different resources.
-    # Replace "YOUR_*_FOLDER_ID" with actual Google Drive folder IDs.
+    # This section contains all file IDs for different resources stored in your private Telegram channel.
+    # Replace placeholder file_ids with actual file_ids from your extractor bot.
     # 
-    # 📋 FOLDER STRUCTURE:
-    #   - {stream}_{grade}_{resource_type}     (for grade-specific resources)
-    #   - {stream}_{subject}_{resource_type}   (for subject-specific resources)
-    #   - {stream}_{year}_exam                 (for year-specific past exams)
+    # 📋 FILE STRUCTURE:
+    #   - {stream}_{resource_type}_{grade}     (for grade-specific resources)
+    #   - {stream}_{resource_type}_{subject}   (for subject-specific resources)
+    #   - {stream}_pastexam_{year}             (for year-specific past exams)
     # 
     # 🎯 STREAMS: natural, social
-    # 📚 RESOURCES: textbooks, teachers_guide, notes, cheats, quizzes, past_exams
+    # 📚 RESOURCES: textbook, guide, notes, cheats, quiz, pastexam, examtips, studytips
     # 📖 SUBJECTS: math, english, physics, biology, chemistry, aptitude, geography, history, economics
     # 🎓 GRADES: grade9, grade10, grade11, grade12, mixed
     # 📅 YEARS: 2000-2017 (for past exams)
     # =============================================================================
     
-    DRIVE_FOLDER_IDS = {
+    FILE_IDS = {
         # =============================================================================
         # 📚 TEXTBOOKS (Free Resources)
         # =============================================================================
         # Grade-specific textbooks for both Natural and Social streams
         
-        # Natural Stream Textbooks
-        "natural_grade9_textbooks": "1BnHNB6qq81BJ5TffaL1pIFhpnKkTvQJx",  # ✅ Configured
-        "natural_grade10_textbooks": "YOUR_NATURAL_GRADE10_TEXTBOOKS_FOLDER_ID",
-        "natural_grade11_textbooks": "YOUR_NATURAL_GRADE11_TEXTBOOKS_FOLDER_ID",
-        "natural_grade12_textbooks": "YOUR_NATURAL_GRADE12_TEXTBOOKS_FOLDER_ID",
+        # Natural Stream Textbooks - Old Curriculum
+        "natural_textbook_grade9_old": [
+            {"file_id": "YOUR_NATURAL_GRADE9_OLD_MATH_TEXTBOOK_FILE_ID", "name": "Grade 9 Mathematics Textbook (Old Curriculum)", "type": "document"},
+            {"file_id": "YOUR_NATURAL_GRADE9_OLD_PHYSICS_TEXTBOOK_FILE_ID", "name": "Grade 9 Physics Textbook (Old Curriculum)", "type": "document"},
+            {"file_id": "YOUR_NATURAL_GRADE9_OLD_CHEMISTRY_TEXTBOOK_FILE_ID", "name": "Grade 9 Chemistry Textbook (Old Curriculum)", "type": "document"},
+        ],
+        # Natural Stream Textbooks - New Curriculum
+        "natural_textbook_grade9_new": [
+            {"file_id": "YOUR_NATURAL_GRADE9_NEW_MATH_TEXTBOOK_FILE_ID", "name": "Grade 9 Mathematics Textbook (New Curriculum)", "type": "document"},
+            {"file_id": "YOUR_NATURAL_GRADE9_NEW_PHYSICS_TEXTBOOK_FILE_ID", "name": "Grade 9 Physics Textbook (New Curriculum)", "type": "document"},
+            {"file_id": "YOUR_NATURAL_GRADE9_NEW_CHEMISTRY_TEXTBOOK_FILE_ID", "name": "Grade 9 Chemistry Textbook (New Curriculum)", "type": "document"},
+        ],
+        "natural_textbook_grade10_old": [
+            {"file_id": "YOUR_NATURAL_GRADE10_OLD_TEXTBOOK_FILE_ID", "name": "Grade 10 Textbook (Old Curriculum)", "type": "document"},
+        ],
+        "natural_textbook_grade10_new": [
+            {"file_id": "YOUR_NATURAL_GRADE10_NEW_TEXTBOOK_FILE_ID", "name": "Grade 10 Textbook (New Curriculum)", "type": "document"},
+        ],
+        "natural_textbook_grade11_old": [
+            {"file_id": "YOUR_NATURAL_GRADE11_OLD_TEXTBOOK_FILE_ID", "name": "Grade 11 Textbook (Old Curriculum)", "type": "document"},
+        ],
+        "natural_textbook_grade11_new": [
+            {"file_id": "YOUR_NATURAL_GRADE11_NEW_TEXTBOOK_FILE_ID", "name": "Grade 11 Textbook (New Curriculum)", "type": "document"},
+        ],
+        "natural_textbook_grade12_old": [
+            {"file_id": "YOUR_NATURAL_GRADE12_OLD_TEXTBOOK_FILE_ID", "name": "Grade 12 Textbook (Old Curriculum)", "type": "document"},
+        ],
+        "natural_textbook_grade12_new": [
+            {"file_id": "YOUR_NATURAL_GRADE12_NEW_TEXTBOOK_FILE_ID", "name": "Grade 12 Textbook (New Curriculum)", "type": "document"},
+        ],
         
         # Social Stream Textbooks
-        "social_grade9_textbooks": "YOUR_SOCIAL_GRADE9_TEXTBOOKS_FOLDER_ID",
-        "social_grade10_textbooks": "YOUR_SOCIAL_GRADE10_TEXTBOOKS_FOLDER_ID",
-        "social_grade11_textbooks": "YOUR_SOCIAL_GRADE11_TEXTBOOKS_FOLDER_ID",
-        "social_grade12_textbooks": "YOUR_SOCIAL_GRADE12_TEXTBOOKS_FOLDER_ID",
+        "social_textbook_grade9_old": [
+            {"file_id": "YOUR_SOCIAL_GRADE9_OLD_TEXTBOOK_FILE_ID", "name": "Grade 9 Social Textbook (Old Curriculum)", "type": "document"},
+        ],
+        "social_textbook_grade9_new": [
+            {"file_id": "YOUR_SOCIAL_GRADE9_NEW_TEXTBOOK_FILE_ID", "name": "Grade 9 Social Textbook (New Curriculum)", "type": "document"},
+        ],
+        "social_textbook_grade10_old": [
+            {"file_id": "YOUR_SOCIAL_GRADE10_OLD_TEXTBOOK_FILE_ID", "name": "Grade 10 Social Textbook (Old Curriculum)", "type": "document"},
+        ],
+        "social_textbook_grade10_new": [
+            {"file_id": "YOUR_SOCIAL_GRADE10_NEW_TEXTBOOK_FILE_ID", "name": "Grade 10 Social Textbook (New Curriculum)", "type": "document"},
+        ],
+        "social_textbook_grade11_old": [
+            {"file_id": "YOUR_SOCIAL_GRADE11_OLD_TEXTBOOK_FILE_ID", "name": "Grade 11 Social Textbook (Old Curriculum)", "type": "document"},
+        ],
+        "social_textbook_grade11_new": [
+            {"file_id": "YOUR_SOCIAL_GRADE11_NEW_TEXTBOOK_FILE_ID", "name": "Grade 11 Social Textbook (New Curriculum)", "type": "document"},
+        ],
+        "social_textbook_grade12_old": [
+            {"file_id": "YOUR_SOCIAL_GRADE12_OLD_TEXTBOOK_FILE_ID", "name": "Grade 12 Social Textbook (Old Curriculum)", "type": "document"},
+        ],
+        "social_textbook_grade12_new": [
+            {"file_id": "YOUR_SOCIAL_GRADE12_NEW_TEXTBOOK_FILE_ID", "name": "Grade 12 Social Textbook (New Curriculum)", "type": "document"},
+        ],
         
         # =============================================================================
         # 📖 TEACHER'S GUIDES (Free Resources)
         # =============================================================================
         # Grade-specific teacher's guides for both streams
         
-        # Natural Stream Teacher's Guides
-        "natural_grade9_teachers_guide": "YOUR_NATURAL_GRADE9_GUIDE_FOLDER_ID",
-        "natural_grade10_teachers_guide": "YOUR_NATURAL_GRADE10_GUIDE_FOLDER_ID",
-        "natural_grade11_teachers_guide": "YOUR_NATURAL_GRADE11_GUIDE_FOLDER_ID",
-        "natural_grade12_teachers_guide": "YOUR_NATURAL_GRADE12_GUIDE_FOLDER_ID",
+        # Natural Stream Teacher's Guides - Old Curriculum
+        "natural_guide_grade9_old": [
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAMFaMp1X9SfsUFwm_Yop3yKMgy2vIIAAiMIAAKgrcFQeu9asiE7RDM2BA", "name": "Chemistry Teacher's Guide Grade 9 (Old Curriculum)", "type": "document"},
+            {"file_id": "BQACAgEAAyEFAASkzI5MAAMGaMp1XwlR14LIzFWbnB3NGVqJijgAAqQAA6SrKERG7RIwx57ECTYE", "name": "Geography Teacher's Guide Grade 9 (Old Curriculum)", "type": "document"},
+            {"file_id": "BQACAgEAAyEFAASkzI5MAAMHaMp1X-m_9cGkZtbiVYwhkl3EcU0AAqkAA6SrKETAaLlVIVydhTYE", "name": "Mathematics Teacher's Guide Grade 9 (Old Curriculum)", "type": "document"},
+            {"file_id": "BQACAgEAAyEFAASkzI5MAAMIaMp1X4RB6AG5721YixRdp1UvCLgAAqUAA6SrKESWPh1KJiwwajYE", "name": "Biology Teacher's Guide Grade 9 (Old Curriculum)", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAMJaMp1X-CVzD49AAGOg--qu2uicy4jAAIlCAACoK3BUCi7ICgozV73NgQ", "name": "Civic & Ethical Education Teacher's Guide Grade 9 (Old Curriculum)", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAMLaMp1X0Ke9w1T7zOQNRygbs8fSScAAtEJAAI0iohRiEaQi-xMsEw2BA", "name": "English Teacher's Guide Grade 9 (Old Curriculum)", "type": "document"},
+        ],
+        # Natural Stream Teacher's Guides - New Curriculum
+        "natural_guide_grade9_new": [
+            {"file_id": "YOUR_NATURAL_GRADE9_NEW_GUIDE_FILE_ID", "name": "Grade 9 Teacher's Guide (New Curriculum)", "type": "document"},
+        ],
+        "natural_guide_grade10_old": [
+            {"file_id": "YOUR_NATURAL_GRADE10_OLD_GUIDE_FILE_ID", "name": "Grade 10 Teacher's Guide (Old Curriculum)", "type": "document"},
+        ],
+        "natural_guide_grade10_new": [
+            {"file_id": "YOUR_NATURAL_GRADE10_NEW_GUIDE_FILE_ID", "name": "Grade 10 Teacher's Guide (New Curriculum)", "type": "document"},
+        ],
+        "natural_guide_grade11_old": [
+            {"file_id": "YOUR_NATURAL_GRADE11_OLD_GUIDE_FILE_ID", "name": "Grade 11 Teacher's Guide (Old Curriculum)", "type": "document"},
+        ],
+        "natural_guide_grade11_new": [
+            {"file_id": "YOUR_NATURAL_GRADE11_NEW_GUIDE_FILE_ID", "name": "Grade 11 Teacher's Guide (New Curriculum)", "type": "document"},
+        ],
+        "natural_guide_grade12_old": [
+            {"file_id": "YOUR_NATURAL_GRADE12_OLD_GUIDE_FILE_ID", "name": "Grade 12 Teacher's Guide (Old Curriculum)", "type": "document"},
+        ],
+        "natural_guide_grade12_new": [
+            {"file_id": "YOUR_NATURAL_GRADE12_NEW_GUIDE_FILE_ID", "name": "Grade 12 Teacher's Guide (New Curriculum)", "type": "document"},
+        ],
         
         # Social Stream Teacher's Guides
-        "social_grade9_teachers_guide": "YOUR_SOCIAL_GRADE9_GUIDE_FOLDER_ID",
-        "social_grade10_teachers_guide": "YOUR_SOCIAL_GRADE10_GUIDE_FOLDER_ID",
-        "social_grade11_teachers_guide": "YOUR_SOCIAL_GRADE11_GUIDE_FOLDER_ID",
-        "social_grade12_teachers_guide": "YOUR_SOCIAL_GRADE12_GUIDE_FOLDER_ID",
+        "social_guide_grade9_old": [
+            {"file_id": "YOUR_SOCIAL_GRADE9_OLD_GUIDE_FILE_ID", "name": "Grade 9 Social Teacher's Guide (Old Curriculum)", "type": "document"},
+        ],
+        "social_guide_grade9_new": [
+            {"file_id": "YOUR_SOCIAL_GRADE9_NEW_GUIDE_FILE_ID", "name": "Grade 9 Social Teacher's Guide (New Curriculum)", "type": "document"},
+        ],
+        "social_guide_grade10_old": [
+            {"file_id": "YOUR_SOCIAL_GRADE10_OLD_GUIDE_FILE_ID", "name": "Grade 10 Social Teacher's Guide (Old Curriculum)", "type": "document"},
+        ],
+        "social_guide_grade10_new": [
+            {"file_id": "YOUR_SOCIAL_GRADE10_NEW_GUIDE_FILE_ID", "name": "Grade 10 Social Teacher's Guide (New Curriculum)", "type": "document"},
+        ],
+        "social_guide_grade11_old": [
+            {"file_id": "YOUR_SOCIAL_GRADE11_OLD_GUIDE_FILE_ID", "name": "Grade 11 Social Teacher's Guide (Old Curriculum)", "type": "document"},
+        ],
+        "social_guide_grade11_new": [
+            {"file_id": "YOUR_SOCIAL_GRADE11_NEW_GUIDE_FILE_ID", "name": "Grade 11 Social Teacher's Guide (New Curriculum)", "type": "document"},
+        ],
+        "social_guide_grade12_old": [
+            {"file_id": "YOUR_SOCIAL_GRADE12_OLD_GUIDE_FILE_ID", "name": "Grade 12 Social Teacher's Guide (Old Curriculum)", "type": "document"},
+        ],
+        "social_guide_grade12_new": [
+            {"file_id": "YOUR_SOCIAL_GRADE12_NEW_GUIDE_FILE_ID", "name": "Grade 12 Social Teacher's Guide (New Curriculum)", "type": "document"},
+        ],
         
         # =============================================================================
         # 📝 SHORT NOTES (Premium Resources)
@@ -121,20 +218,44 @@ class Config:
         # Subject-specific short notes for both streams
         
         # Natural Stream Short Notes
-        "natural_math_notes": "1ACN3bhZRv_XzuU7X1hwIvlUbBo24mTS_",
-        "natural_english_notes": "YOUR_NATURAL_ENGLISH_NOTES_FOLDER_ID",
-        "natural_physics_notes": "YOUR_NATURAL_PHYSICS_NOTES_FOLDER_ID",
-        "natural_biology_notes": "YOUR_NATURAL_BIOLOGY_NOTES_FOLDER_ID",
-        "natural_chemistry_notes": "YOUR_NATURAL_CHEMISTRY_NOTES_FOLDER_ID",
-        "natural_aptitude_notes": "YOUR_NATURAL_APTITUDE_NOTES_FOLDER_ID",
+        "natural_notes_math": [
+            {"file_id": "YOUR_NATURAL_MATH_NOTES_FILE_ID", "name": "Mathematics Short Notes", "type": "document"},
+        ],
+        "natural_notes_english": [
+            {"file_id": "YOUR_NATURAL_ENGLISH_NOTES_FILE_ID", "name": "English Short Notes", "type": "document"},
+        ],
+        "natural_notes_physics": [
+            {"file_id": "YOUR_NATURAL_PHYSICS_NOTES_FILE_ID", "name": "Physics Short Notes", "type": "document"},
+        ],
+        "natural_notes_biology": [
+            {"file_id": "YOUR_NATURAL_BIOLOGY_NOTES_FILE_ID", "name": "Biology Short Notes", "type": "document"},
+        ],
+        "natural_notes_chemistry": [
+            {"file_id": "YOUR_NATURAL_CHEMISTRY_NOTES_FILE_ID", "name": "Chemistry Short Notes", "type": "document"},
+        ],
+        "natural_notes_aptitude": [
+            {"file_id": "YOUR_NATURAL_APTITUDE_NOTES_FILE_ID", "name": "Aptitude Short Notes", "type": "document"},
+        ],
         
         # Social Stream Short Notes
-        "social_math_notes": "YOUR_SOCIAL_MATH_NOTES_FOLDER_ID",
-        "social_english_notes": "YOUR_SOCIAL_ENGLISH_NOTES_FOLDER_ID",
-        "social_geography_notes": "YOUR_SOCIAL_GEOGRAPHY_NOTES_FOLDER_ID",
-        "social_history_notes": "YOUR_SOCIAL_HISTORY_NOTES_FOLDER_ID",
-        "social_economics_notes": "YOUR_SOCIAL_ECONOMICS_NOTES_FOLDER_ID",
-        "social_aptitude_notes": "YOUR_SOCIAL_APTITUDE_NOTES_FOLDER_ID",
+        "social_notes_math": [
+            {"file_id": "YOUR_SOCIAL_MATH_NOTES_FILE_ID", "name": "Mathematics Short Notes", "type": "document"},
+        ],
+        "social_notes_english": [
+            {"file_id": "YOUR_SOCIAL_ENGLISH_NOTES_FILE_ID", "name": "English Short Notes", "type": "document"},
+        ],
+        "social_notes_geography": [
+            {"file_id": "YOUR_SOCIAL_GEOGRAPHY_NOTES_FILE_ID", "name": "Geography Short Notes", "type": "document"},
+        ],
+        "social_notes_history": [
+            {"file_id": "YOUR_SOCIAL_HISTORY_NOTES_FILE_ID", "name": "History Short Notes", "type": "document"},
+        ],
+        "social_notes_economics": [
+            {"file_id": "YOUR_SOCIAL_ECONOMICS_NOTES_FILE_ID", "name": "Economics Short Notes", "type": "document"},
+        ],
+        "social_notes_aptitude": [
+            {"file_id": "YOUR_SOCIAL_APTITUDE_NOTES_FILE_ID", "name": "Aptitude Short Notes", "type": "document"},
+        ],
         
         # =============================================================================
         # 🧮 CHEAT SHEETS (Premium Resources)
@@ -142,159 +263,221 @@ class Config:
         # Subject-specific cheat sheets for both streams
         
         # Natural Stream Cheat Sheets
-        "natural_math_cheats": "YOUR_NATURAL_MATH_CHEATS_FOLDER_ID",
-        "natural_english_cheats": "YOUR_NATURAL_ENGLISH_CHEATS_FOLDER_ID",
-        "natural_physics_cheats": "YOUR_NATURAL_PHYSICS_CHEATS_FOLDER_ID",
-        "natural_biology_cheats": "YOUR_NATURAL_BIOLOGY_CHEATS_FOLDER_ID",
-        "natural_chemistry_cheats": "YOUR_NATURAL_CHEMISTRY_CHEATS_FOLDER_ID",
-        "natural_aptitude_cheats": "YOUR_NATURAL_APTITUDE_CHEATS_FOLDER_ID",
+        "natural_cheats_math": [
+            {"file_id": "YOUR_NATURAL_MATH_CHEATS_FILE_ID", "name": "Math Formulas Cheat Sheet", "type": "document"},
+        ],
+        "natural_cheats_english": [
+            {"file_id": "YOUR_NATURAL_ENGLISH_CHEATS_FILE_ID", "name": "English Tips Cheat Sheet", "type": "document"},
+        ],
+        "natural_cheats_physics": [
+            {"file_id": "YOUR_NATURAL_PHYSICS_CHEATS_FILE_ID", "name": "Physics Formulas Cheat Sheet", "type": "document"},
+        ],
+        "natural_cheats_biology": [
+            {"file_id": "YOUR_NATURAL_BIOLOGY_CHEATS_FILE_ID", "name": "Biology Cheats", "type": "document"},
+        ],
+        "natural_cheats_chemistry": [
+            {"file_id": "YOUR_NATURAL_CHEMISTRY_CHEATS_FILE_ID", "name": "Chemistry Cheats", "type": "document"},
+        ],
+        "natural_cheats_aptitude": [
+            {"file_id": "YOUR_NATURAL_APTITUDE_CHEATS_FILE_ID", "name": "Aptitude Tricks", "type": "document"},
+        ],
         
         # Social Stream Cheat Sheets
-        "social_math_cheats": "YOUR_SOCIAL_MATH_CHEATS_FOLDER_ID",
-        "social_english_cheats": "YOUR_SOCIAL_ENGLISH_CHEATS_FOLDER_ID",
-        "social_geography_cheats": "YOUR_SOCIAL_GEOGRAPHY_CHEATS_FOLDER_ID",
-        "social_history_cheats": "YOUR_SOCIAL_HISTORY_CHEATS_FOLDER_ID",
-        "social_economics_cheats": "YOUR_SOCIAL_ECONOMICS_CHEATS_FOLDER_ID",
-        "social_aptitude_cheats": "YOUR_SOCIAL_APTITUDE_CHEATS_FOLDER_ID",
+        "social_cheats_math": [
+            {"file_id": "YOUR_SOCIAL_MATH_CHEATS_FILE_ID", "name": "Math Formulas Cheat Sheet", "type": "document"},
+        ],
+        "social_cheats_english": [
+            {"file_id": "YOUR_SOCIAL_ENGLISH_CHEATS_FILE_ID", "name": "English Tips Cheat Sheet", "type": "document"},
+        ],
+        "social_cheats_geography": [
+            {"file_id": "YOUR_SOCIAL_GEOGRAPHY_CHEATS_FILE_ID", "name": "Geography Cheats", "type": "document"},
+        ],
+        "social_cheats_history": [
+            {"file_id": "YOUR_SOCIAL_HISTORY_CHEATS_FILE_ID", "name": "History Cheats", "type": "document"},
+        ],
+        "social_cheats_economics": [
+            {"file_id": "YOUR_SOCIAL_ECONOMICS_CHEATS_FILE_ID", "name": "Economics Cheats", "type": "document"},
+        ],
+        "social_cheats_aptitude": [
+            {"file_id": "YOUR_SOCIAL_APTITUDE_CHEATS_FILE_ID", "name": "Aptitude Tricks", "type": "document"},
+        ],
         
         # =============================================================================
         # 🧠 QUIZZES (Premium Resources)
         # =============================================================================
         # Grade and subject-specific quizzes for both streams
         
-        # Natural Stream Quizzes - Mathematics
-        "natural_math_grade9_quizzes": "YOUR_NATURAL_MATH_GRADE9_QUIZZES_FOLDER_ID",
-        "natural_math_grade10_quizzes": "YOUR_NATURAL_MATH_GRADE10_QUIZZES_FOLDER_ID",
-        "natural_math_grade11_quizzes": "YOUR_NATURAL_MATH_GRADE11_QUIZZES_FOLDER_ID",
-        "natural_math_grade12_quizzes": "YOUR_NATURAL_MATH_GRADE12_QUIZZES_FOLDER_ID",
-        "natural_math_mixed_quizzes": "YOUR_NATURAL_MATH_MIXED_QUIZZES_FOLDER_ID",
+        # Natural Stream Quizzes
+        "natural_quiz_math_grade9": [
+            {"file_id": "YOUR_NATURAL_MATH_GRADE9_QUIZ_FILE_ID", "name": "Math Quiz Grade 9", "type": "document"},
+        ],
+        "natural_quiz_math_grade10": [
+            {"file_id": "YOUR_NATURAL_MATH_GRADE10_QUIZ_FILE_ID", "name": "Math Quiz Grade 10", "type": "document"},
+        ],
+        "natural_quiz_math_mixed": [
+            {"file_id": "YOUR_NATURAL_MATH_MIXED_QUIZ_FILE_ID", "name": "Math Quiz Mixed", "type": "document"},
+        ],
+        "natural_quiz_physics_grade9": [
+            {"file_id": "YOUR_NATURAL_PHYSICS_GRADE9_QUIZ_FILE_ID", "name": "Physics Quiz Grade 9", "type": "document"},
+        ],
+        "natural_quiz_chemistry_grade9": [
+            {"file_id": "YOUR_NATURAL_CHEMISTRY_GRADE9_QUIZ_FILE_ID", "name": "Chemistry Quiz Grade 9", "type": "document"},
+        ],
         
-        # Natural Stream Quizzes - English
-        "natural_english_grade9_quizzes": "YOUR_NATURAL_ENGLISH_GRADE9_QUIZZES_FOLDER_ID",
-        "natural_english_grade10_quizzes": "YOUR_NATURAL_ENGLISH_GRADE10_QUIZZES_FOLDER_ID",
-        "natural_english_grade11_quizzes": "YOUR_NATURAL_ENGLISH_GRADE11_QUIZZES_FOLDER_ID",
-        "natural_english_grade12_quizzes": "YOUR_NATURAL_ENGLISH_GRADE12_QUIZZES_FOLDER_ID",
-        "natural_english_mixed_quizzes": "YOUR_NATURAL_ENGLISH_MIXED_QUIZZES_FOLDER_ID",
-        
-        # Natural Stream Quizzes - Physics
-        "natural_physics_grade9_quizzes": "YOUR_NATURAL_PHYSICS_GRADE9_QUIZZES_FOLDER_ID",
-        "natural_physics_grade10_quizzes": "YOUR_NATURAL_PHYSICS_GRADE10_QUIZZES_FOLDER_ID",
-        "natural_physics_grade11_quizzes": "YOUR_NATURAL_PHYSICS_GRADE11_QUIZZES_FOLDER_ID",
-        "natural_physics_grade12_quizzes": "YOUR_NATURAL_PHYSICS_GRADE12_QUIZZES_FOLDER_ID",
-        "natural_physics_mixed_quizzes": "YOUR_NATURAL_PHYSICS_MIXED_QUIZZES_FOLDER_ID",
-        
-        # Natural Stream Quizzes - Biology
-        "natural_biology_grade9_quizzes": "YOUR_NATURAL_BIOLOGY_GRADE9_QUIZZES_FOLDER_ID",
-        "natural_biology_grade10_quizzes": "YOUR_NATURAL_BIOLOGY_GRADE10_QUIZZES_FOLDER_ID",
-        "natural_biology_grade11_quizzes": "YOUR_NATURAL_BIOLOGY_GRADE11_QUIZZES_FOLDER_ID",
-        "natural_biology_grade12_quizzes": "YOUR_NATURAL_BIOLOGY_GRADE12_QUIZZES_FOLDER_ID",
-        "natural_biology_mixed_quizzes": "YOUR_NATURAL_BIOLOGY_MIXED_QUIZZES_FOLDER_ID",
-        
-        # Natural Stream Quizzes - Chemistry
-        "natural_chemistry_grade9_quizzes": "YOUR_NATURAL_CHEMISTRY_GRADE9_QUIZZES_FOLDER_ID",
-        "natural_chemistry_grade10_quizzes": "YOUR_NATURAL_CHEMISTRY_GRADE10_QUIZZES_FOLDER_ID",
-        "natural_chemistry_grade11_quizzes": "YOUR_NATURAL_CHEMISTRY_GRADE11_QUIZZES_FOLDER_ID",
-        "natural_chemistry_grade12_quizzes": "YOUR_NATURAL_CHEMISTRY_GRADE12_QUIZZES_FOLDER_ID",
-        "natural_chemistry_mixed_quizzes": "YOUR_NATURAL_CHEMISTRY_MIXED_QUIZZES_FOLDER_ID",
-        
-        # Natural Stream Quizzes - Aptitude
-        "natural_aptitude_grade9_quizzes": "YOUR_NATURAL_APTITUDE_GRADE9_QUIZZES_FOLDER_ID",
-        "natural_aptitude_grade10_quizzes": "YOUR_NATURAL_APTITUDE_GRADE10_QUIZZES_FOLDER_ID",
-        "natural_aptitude_grade11_quizzes": "YOUR_NATURAL_APTITUDE_GRADE11_QUIZZES_FOLDER_ID",
-        "natural_aptitude_grade12_quizzes": "YOUR_NATURAL_APTITUDE_GRADE12_QUIZZES_FOLDER_ID",
-        "natural_aptitude_mixed_quizzes": "YOUR_NATURAL_APTITUDE_MIXED_QUIZZES_FOLDER_ID",
-        
-        # Social Stream Quizzes - Mathematics
-        "social_math_grade9_quizzes": "YOUR_SOCIAL_MATH_GRADE9_QUIZZES_FOLDER_ID",
-        "social_math_grade10_quizzes": "YOUR_SOCIAL_MATH_GRADE10_QUIZZES_FOLDER_ID",
-        "social_math_grade11_quizzes": "YOUR_SOCIAL_MATH_GRADE11_QUIZZES_FOLDER_ID",
-        "social_math_grade12_quizzes": "YOUR_SOCIAL_MATH_GRADE12_QUIZZES_FOLDER_ID",
-        "social_math_mixed_quizzes": "YOUR_SOCIAL_MATH_MIXED_QUIZZES_FOLDER_ID",
-        
-        # Social Stream Quizzes - English
-        "social_english_grade9_quizzes": "YOUR_SOCIAL_ENGLISH_GRADE9_QUIZZES_FOLDER_ID",
-        "social_english_grade10_quizzes": "YOUR_SOCIAL_ENGLISH_GRADE10_QUIZZES_FOLDER_ID",
-        "social_english_grade11_quizzes": "YOUR_SOCIAL_ENGLISH_GRADE11_QUIZZES_FOLDER_ID",
-        "social_english_grade12_quizzes": "YOUR_SOCIAL_ENGLISH_GRADE12_QUIZZES_FOLDER_ID",
-        "social_english_mixed_quizzes": "YOUR_SOCIAL_ENGLISH_MIXED_QUIZZES_FOLDER_ID",
-        
-        # Social Stream Quizzes - Geography
-        "social_geography_grade9_quizzes": "YOUR_SOCIAL_GEOGRAPHY_GRADE9_QUIZZES_FOLDER_ID",
-        "social_geography_grade10_quizzes": "YOUR_SOCIAL_GEOGRAPHY_GRADE10_QUIZZES_FOLDER_ID",
-        "social_geography_grade11_quizzes": "YOUR_SOCIAL_GEOGRAPHY_GRADE11_QUIZZES_FOLDER_ID",
-        "social_geography_grade12_quizzes": "YOUR_SOCIAL_GEOGRAPHY_GRADE12_QUIZZES_FOLDER_ID",
-        "social_geography_mixed_quizzes": "YOUR_SOCIAL_GEOGRAPHY_MIXED_QUIZZES_FOLDER_ID",
-        
-        # Social Stream Quizzes - History
-        "social_history_grade9_quizzes": "YOUR_SOCIAL_HISTORY_GRADE9_QUIZZES_FOLDER_ID",
-        "social_history_grade10_quizzes": "YOUR_SOCIAL_HISTORY_GRADE10_QUIZZES_FOLDER_ID",
-        "social_history_grade11_quizzes": "YOUR_SOCIAL_HISTORY_GRADE11_QUIZZES_FOLDER_ID",
-        "social_history_grade12_quizzes": "YOUR_SOCIAL_HISTORY_GRADE12_QUIZZES_FOLDER_ID",
-        "social_history_mixed_quizzes": "YOUR_SOCIAL_HISTORY_MIXED_QUIZZES_FOLDER_ID",
-        
-        # Social Stream Quizzes - Economics
-        "social_economics_grade9_quizzes": "YOUR_SOCIAL_ECONOMICS_GRADE9_QUIZZES_FOLDER_ID",
-        "social_economics_grade10_quizzes": "YOUR_SOCIAL_ECONOMICS_GRADE10_QUIZZES_FOLDER_ID",
-        "social_economics_grade11_quizzes": "YOUR_SOCIAL_ECONOMICS_GRADE11_QUIZZES_FOLDER_ID",
-        "social_economics_grade12_quizzes": "YOUR_SOCIAL_ECONOMICS_GRADE12_QUIZZES_FOLDER_ID",
-        "social_economics_mixed_quizzes": "YOUR_SOCIAL_ECONOMICS_MIXED_QUIZZES_FOLDER_ID",
-        
-        # Social Stream Quizzes - Aptitude
-        "social_aptitude_grade9_quizzes": "YOUR_SOCIAL_APTITUDE_GRADE9_QUIZZES_FOLDER_ID",
-        "social_aptitude_grade10_quizzes": "YOUR_SOCIAL_APTITUDE_GRADE10_QUIZZES_FOLDER_ID",
-        "social_aptitude_grade11_quizzes": "YOUR_SOCIAL_APTITUDE_GRADE11_QUIZZES_FOLDER_ID",
-        "social_aptitude_grade12_quizzes": "YOUR_SOCIAL_APTITUDE_GRADE12_QUIZZES_FOLDER_ID",
-        "social_aptitude_mixed_quizzes": "YOUR_SOCIAL_APTITUDE_MIXED_QUIZZES_FOLDER_ID",
+        # Social Stream Quizzes
+        "social_quiz_math_grade9": [
+            {"file_id": "YOUR_SOCIAL_MATH_GRADE9_QUIZ_FILE_ID", "name": "Math Quiz Grade 9", "type": "document"},
+        ],
+        "social_quiz_geography_grade9": [
+            {"file_id": "YOUR_SOCIAL_GEOGRAPHY_GRADE9_QUIZ_FILE_ID", "name": "Geography Quiz Grade 9", "type": "document"},
+        ],
+        "social_quiz_history_grade9": [
+            {"file_id": "YOUR_SOCIAL_HISTORY_GRADE9_QUIZ_FILE_ID", "name": "History Quiz Grade 9", "type": "document"},
+        ],
         
         # =============================================================================
         # 📝 PAST EXAMS (Mixed Free/Premium Resources)
         # =============================================================================
-        # Year-specific past exams (2000-2017: Free, 2014-2017: Premium)
+        # Year-specific past exams (2000-2013: Free, 2014-2017: Premium)
         
         # Natural Stream Past Exams (2000-2017)
-        **{f"natural_{year}_exam": f"YOUR_NATURAL_{year}_EXAM_FOLDER_ID" for year in range(2000, 2018)},
+        "natural_pastexam_2000": [
+            {"file_id": "YOUR_NATURAL_2000_EXAM_FILE_ID", "name": "Natural Science Exam 2000", "type": "document"},
+        ],
+        "natural_pastexam_2001": [
+            {"file_id": "YOUR_NATURAL_2001_EXAM_FILE_ID", "name": "Natural Science Exam 2001", "type": "document"},
+        ],
+        "natural_pastexam_2002": [
+            {"file_id": "YOUR_NATURAL_2002_EXAM_FILE_ID", "name": "Natural Science Exam 2002", "type": "document"},
+        ],
+        "natural_pastexam_2003": [
+            {"file_id": "YOUR_NATURAL_2003_EXAM_FILE_ID", "name": "Natural Science Exam 2003", "type": "document"},
+        ],
+        "natural_pastexam_2004": [
+            {"file_id": "YOUR_NATURAL_2004_EXAM_FILE_ID", "name": "Natural Science Exam 2004", "type": "document"},
+        ],
+        "natural_pastexam_2005": [
+            {"file_id": "YOUR_NATURAL_2005_EXAM_FILE_ID", "name": "Natural Science Exam 2005", "type": "document"},
+        ],
+        "natural_pastexam_2006": [
+            {"file_id": "YOUR_NATURAL_2006_EXAM_FILE_ID", "name": "Natural Science Exam 2006", "type": "document"},
+        ],
+        "natural_pastexam_2007": [
+            {"file_id": "YOUR_NATURAL_2007_EXAM_FILE_ID", "name": "Natural Science Exam 2007", "type": "document"},
+        ],
+        "natural_pastexam_2008": [
+            {"file_id": "YOUR_NATURAL_2008_EXAM_FILE_ID", "name": "Natural Science Exam 2008", "type": "document"},
+        ],
+        "natural_pastexam_2009": [
+            {"file_id": "YOUR_NATURAL_2009_EXAM_FILE_ID", "name": "Natural Science Exam 2009", "type": "document"},
+        ],
+        "natural_pastexam_2010": [
+            {"file_id": "YOUR_NATURAL_2010_EXAM_FILE_ID", "name": "Natural Science Exam 2010", "type": "document"},
+        ],
+        "natural_pastexam_2011": [
+            {"file_id": "YOUR_NATURAL_2011_EXAM_FILE_ID", "name": "Natural Science Exam 2011", "type": "document"},
+        ],
+        "natural_pastexam_2012": [
+            {"file_id": "YOUR_NATURAL_2012_EXAM_FILE_ID", "name": "Natural Science Exam 2012", "type": "document"},
+        ],
+        "natural_pastexam_2013": [
+            {"file_id": "YOUR_NATURAL_2013_EXAM_FILE_ID", "name": "Natural Science Exam 2013", "type": "document"},
+        ],
+        "natural_pastexam_2014": [  # Premium
+            {"file_id": "YOUR_NATURAL_2014_EXAM_FILE_ID", "name": "Natural Science Exam 2014", "type": "document"},
+        ],
+        "natural_pastexam_2015": [  # Premium
+            {"file_id": "YOUR_NATURAL_2015_EXAM_FILE_ID", "name": "Natural Science Exam 2015", "type": "document"},
+        ],
+        "natural_pastexam_2016": [  # Premium
+            {"file_id": "YOUR_NATURAL_2016_EXAM_FILE_ID", "name": "Natural Science Exam 2016", "type": "document"},
+        ],
+        "natural_pastexam_2017": [  # Premium
+            {"file_id": "YOUR_NATURAL_2017_EXAM_FILE_ID", "name": "Natural Science Exam 2017", "type": "document"},
+        ],
         
         # Social Stream Past Exams (2000-2017)
-        **{f"social_{year}_exam": f"YOUR_SOCIAL_{year}_EXAM_FOLDER_ID" for year in range(2000, 2018)},
-        
-        # =============================================================================
-        # 📚 TOPIC-BASED PAST EXAMS (Future Feature)
-        # =============================================================================
-        # Subject-specific past exams organized by topics
-        
-        # Natural Stream Topic-Based Past Exams
-        "natural_math_past_exams": "YOUR_NATURAL_MATH_PAST_EXAMS_FOLDER_ID",
-        "natural_english_past_exams": "YOUR_NATURAL_ENGLISH_PAST_EXAMS_FOLDER_ID",
-        "natural_physics_past_exams": "YOUR_NATURAL_PHYSICS_PAST_EXAMS_FOLDER_ID",
-        "natural_biology_past_exams": "YOUR_NATURAL_BIOLOGY_PAST_EXAMS_FOLDER_ID",
-        "natural_chemistry_past_exams": "YOUR_NATURAL_CHEMISTRY_PAST_EXAMS_FOLDER_ID",
-        "natural_aptitude_past_exams": "YOUR_NATURAL_APTITUDE_PAST_EXAMS_FOLDER_ID",
-        
-        # Social Stream Topic-Based Past Exams
-        "social_math_past_exams": "YOUR_SOCIAL_MATH_PAST_EXAMS_FOLDER_ID",
-        "social_english_past_exams": "YOUR_SOCIAL_ENGLISH_PAST_EXAMS_FOLDER_ID",
-        "social_geography_past_exams": "YOUR_SOCIAL_GEOGRAPHY_PAST_EXAMS_FOLDER_ID",
-        "social_history_past_exams": "YOUR_SOCIAL_HISTORY_PAST_EXAMS_FOLDER_ID",
-        "social_economics_past_exams": "YOUR_SOCIAL_ECONOMICS_PAST_EXAMS_FOLDER_ID",
-        "social_aptitude_past_exams": "YOUR_SOCIAL_APTITUDE_PAST_EXAMS_FOLDER_ID",
+        "social_pastexam_2000": [
+            {"file_id": "BQACAgQAAxkBAAIC6WjKZsGOxyJuZ0P-NEUqkaX0Wae-AAKxGQAC4bZQUvsBXtwNzQABVjYE", "name": "2000 Economics Exam", "type": "document"},
+        ],
+        "social_pastexam_2001": [
+            {"file_id": "YOUR_SOCIAL_2001_EXAM_FILE_ID", "name": "Social Science Exam 2001", "type": "document"},
+        ],
+        "social_pastexam_2002": [
+            {"file_id": "YOUR_SOCIAL_2002_EXAM_FILE_ID", "name": "Social Science Exam 2002", "type": "document"},
+        ],
+        "social_pastexam_2003": [
+            {"file_id": "YOUR_SOCIAL_2003_EXAM_FILE_ID", "name": "Social Science Exam 2003", "type": "document"},
+        ],
+        "social_pastexam_2004": [
+            {"file_id": "YOUR_SOCIAL_2004_EXAM_FILE_ID", "name": "Social Science Exam 2004", "type": "document"},
+        ],
+        "social_pastexam_2005": [
+            {"file_id": "YOUR_SOCIAL_2005_EXAM_FILE_ID", "name": "Social Science Exam 2005", "type": "document"},
+        ],
+        "social_pastexam_2006": [
+            {"file_id": "YOUR_SOCIAL_2006_EXAM_FILE_ID", "name": "Social Science Exam 2006", "type": "document"},
+        ],
+        "social_pastexam_2007": [
+            {"file_id": "YOUR_SOCIAL_2007_EXAM_FILE_ID", "name": "Social Science Exam 2007", "type": "document"},
+        ],
+        "social_pastexam_2008": [
+            {"file_id": "YOUR_SOCIAL_2008_EXAM_FILE_ID", "name": "Social Science Exam 2008", "type": "document"},
+        ],
+        "social_pastexam_2009": [
+            {"file_id": "YOUR_SOCIAL_2009_EXAM_FILE_ID", "name": "Social Science Exam 2009", "type": "document"},
+        ],
+        "social_pastexam_2010": [
+            {"file_id": "YOUR_SOCIAL_2010_EXAM_FILE_ID", "name": "Social Science Exam 2010", "type": "document"},
+        ],
+        "social_pastexam_2011": [
+            {"file_id": "YOUR_SOCIAL_2011_EXAM_FILE_ID", "name": "Social Science Exam 2011", "type": "document"},
+        ],
+        "social_pastexam_2012": [
+            {"file_id": "YOUR_SOCIAL_2012_EXAM_FILE_ID", "name": "Social Science Exam 2012", "type": "document"},
+        ],
+        "social_pastexam_2013": [
+            {"file_id": "YOUR_SOCIAL_2013_EXAM_FILE_ID", "name": "Social Science Exam 2013", "type": "document"},
+        ],
+        "social_pastexam_2014": [  # Premium
+            {"file_id": "YOUR_SOCIAL_2014_EXAM_FILE_ID", "name": "Social Science Exam 2014", "type": "document"},
+        ],
+        "social_pastexam_2015": [  # Premium
+            {"file_id": "YOUR_SOCIAL_2015_EXAM_FILE_ID", "name": "Social Science Exam 2015", "type": "document"},
+        ],
+        "social_pastexam_2016": [  # Premium
+            {"file_id": "YOUR_SOCIAL_2016_EXAM_FILE_ID", "name": "Social Science Exam 2016", "type": "document"},
+        ],
+        "social_pastexam_2017": [  # Premium
+            {"file_id": "YOUR_SOCIAL_2017_EXAM_FILE_ID", "name": "Social Science Exam 2017", "type": "document"},
+        ],
         
         # =============================================================================
         # 💡 EXAM TIPS (Premium Resources)
         # =============================================================================
         # Stream-specific exam tips and strategies
         
-        "natural_exam_tips": "YOUR_NATURAL_EXAM_TIPS_FOLDER_ID",
-        "social_exam_tips": "YOUR_SOCIAL_EXAM_TIPS_FOLDER_ID",
+        "natural_examtips": [
+            {"file_id": "YOUR_NATURAL_EXAM_TIPS_FILE_ID", "name": "Natural Science Exam Tips", "type": "document"},
+        ],
+        "social_examtips": [
+            {"file_id": "YOUR_SOCIAL_EXAM_TIPS_FILE_ID", "name": "Social Science Exam Tips", "type": "document"},
+        ],
         
         # =============================================================================
         # 📖 STUDY TIPS (Premium Resources)
         # =============================================================================
         # Stream-specific study tips and techniques
         
-        "natural_study_tips": "YOUR_NATURAL_STUDY_TIPS_FOLDER_ID",
-        "social_study_tips": "YOUR_SOCIAL_STUDY_TIPS_FOLDER_ID",
+        "natural_studytips": [
+            {"file_id": "YOUR_NATURAL_STUDY_TIPS_FILE_ID", "name": "Natural Science Study Tips", "type": "document"},
+        ],
+        "social_studytips": [
+            {"file_id": "YOUR_SOCIAL_STUDY_TIPS_FILE_ID", "name": "Social Science Study Tips", "type": "document"},
+        ],
         
     }
+
 
 class MenuItems:
     """

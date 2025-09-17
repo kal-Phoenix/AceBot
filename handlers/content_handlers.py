@@ -4,7 +4,7 @@ import random
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from database.models import User
-from services.google_drive import GoogleDriveService
+from services.telegram_channel import TelegramChannelService
 from config import Config, MenuItems as MI
 from keyboards import Keyboards
 from handlers import user_handlers  # For calling start() on error
@@ -12,8 +12,8 @@ from handlers import user_handlers  # For calling start() on error
 logger = logging.getLogger(__name__)
 PREMIUM_MESSAGE = "This feature is for premium users only. Please upgrade to access this content. Tap '💎 Upgrade' from the main menu to learn more!"
 
-# Initialize Google Drive service
-drive_service = GoogleDriveService()
+# Initialize Telegram Channel service
+channel_service = TelegramChannelService()
 
 
 
@@ -79,36 +79,27 @@ async def _process_quiz_grade_selection(update: Update, context: ContextTypes.DE
     # Determine grade parameter for channel search
     grade_param = "mixed" if mixed else f"grade{grade_value}"
 
-    # Construct the key for Config.DRIVE_FOLDER_IDS
-    if mixed:
-        folder_key = f"{db_user.stream}_{subject_key}_mixed_quiz"
-    else:
-        folder_key = f"{db_user.stream}_{subject_key}_grade{grade_value}_quiz"
+    # Get content from Telegram channel
+    content_list = await channel_service.get_quizzes(context, db_user.stream, subject_key, grade_param)
     
-    folder_id = Config.DRIVE_FOLDER_IDS.get(folder_key)
-    
-    if not folder_id or folder_id.startswith("YOUR_"):  # Check for placeholder IDs
+    if not content_list:
         await update.message.reply_text(
             f"Quizzes for {subject_key.capitalize()} {grade_text} not available for {db_user.stream.capitalize()} stream yet. "
-            f"Please ensure the Google Drive folder ID is configured correctly in config.py."
+            f"Please check the content channel or contact support."
         )
-        logger.info(f"No valid folder ID found or placeholder used for {folder_key} for user {db_user.user_id}.")
-        return
-    
-    files = drive_service.list_files(folder_id, is_premium_content=True)  # Quizzes are premium
-    if not files:
-        await update.message.reply_text(f"No quizzes found for {subject_key.capitalize()} {grade_text}.")
-        logger.info(f"No files found in folder {folder_id} for user {db_user.user_id}.")
+        logger.info(f"No quiz content found for {subject_key} {grade_text} {db_user.stream} for user {db_user.user_id}.")
         return
     
     message = f"🧠 Quizzes - {subject_key.capitalize()} {grade_text} ({db_user.stream.capitalize()}):\n\n"
     buttons = []
     
-    for file in files:
-        message += f"📄 {file['name']}\n"
+    for content in content_list:
+        file_name = content.get('caption', 'Untitled')
+        message += f"📄 {file_name}\n"
         
-        # Add view button (quizzes are premium - view only, no download/screenshot)
-        buttons.append([InlineKeyboardButton(f"👁️ View {file['name']}", url=file['view_only_url'])])
+        # Add view button using channel link (quizzes are premium)
+        channel_link = content.get('channel_link', f"https://t.me/{channel_service.channel_username.lstrip('@')}/{content['message_id']}")
+        buttons.append([InlineKeyboardButton(f"👁️ View {file_name}", url=channel_link)])
         message += "\n"
 
     await update.message.reply_text(
@@ -210,44 +201,34 @@ async def _process_past_exam_year_selection(update: Update, context: ContextType
         logger.info(f"Non-premium user {db_user.user_id} attempted to access premium exam year {year}.")
         return
 
-    # Construct the key for Config.DRIVE_FOLDER_IDS
-    folder_key = f"{db_user.stream}_{year}_exam"
-    folder_id = Config.DRIVE_FOLDER_IDS.get(folder_key)
+    # Send files directly to user
+    sent_files = await channel_service.get_past_exams_by_year(context, db_user.stream, year, db_user.user_id)
 
-    if not folder_id or folder_id.startswith("YOUR_"):  # Check for placeholder IDs
+    if not sent_files:
         await update.message.reply_text(
             f"Past exam for {year} not available for {db_user.stream.capitalize()} stream yet. "
-            f"Please ensure the Google Drive folder ID is configured correctly in config.py."
+            f"Please check the content or contact support."
         )
-        logger.info(f"No valid folder ID found or placeholder used for {folder_key} for user {db_user.user_id}.")
+        logger.info(f"No past exam content found for {year} {db_user.stream} for user {db_user.user_id}.")
         return
 
-    # Check if this is a premium year (2014-2017)
-    is_premium_year = year in [2014, 2015, 2016, 2017]
+    # Send confirmation message after sending files
+    sent_count = len([file for file in sent_files if file.get('sent')])
+    failed_count = len([file for file in sent_files if not file.get('sent')])
     
-    files = drive_service.list_files(folder_id, is_premium_content=is_premium_year)  # Premium years are restricted
-    if not files:
-        await update.message.reply_text(f"No past exam files found for {year}.")
-        logger.info(f"No files found in folder {folder_id} for user {db_user.user_id}.")
-        return
-    
-    message = f"📚 Past Exam {year} ({db_user.stream.capitalize()}):\n\n"
-    buttons = []
-    
-    for file in files:
-        message += f"📄 {file['name']}\n"
-        
-        # Add view button based on premium status
-        if db_user.is_premium or not is_premium_year:
-            buttons.append([InlineKeyboardButton(f"👁️ View {file['name']}", url=file['view_only_url'])])
-        else:
-            buttons.append([InlineKeyboardButton(f"💎 Upgrade to View {file['name']}", callback_data="upgrade")])
-        message += "\n"
-
-    await update.message.reply_text(
-        message, 
-        reply_markup=InlineKeyboardMarkup(buttons) if buttons else Keyboards.main_menu()
-    )
+    if sent_count > 0:
+        await update.message.reply_text(
+            f"✅ Sent {sent_count} past exam files for {year} ({db_user.stream.capitalize()})!\n\n"
+            f"📁 Files have been sent directly to your chat above. You can download, view, or share them as needed."
+            + (f"\n\n⚠️ {failed_count} files failed to send." if failed_count > 0 else ""),
+            reply_markup=Keyboards.main_menu()
+        )
+        logger.info(f"Sent {sent_count} past exam files to user {db_user.user_id}.")
+    else:
+        await update.message.reply_text(
+            f"❌ Failed to send past exam files. Please try again or contact support.",
+            reply_markup=Keyboards.main_menu()
+        )
     logger.info(f"User {db_user.user_id} received past exam for {year}.")
 
 
@@ -302,35 +283,27 @@ async def _process_past_exam_topic_selection(update: Update, context: ContextTyp
         logger.warning(f"User {db_user.user_id} sent invalid topic selection: {topic_text}")
         return
     
-    # Construct the key for Config.DRIVE_FOLDER_IDS
-    folder_key = f"{db_user.stream}_{subject_key}_past_exams"
-    folder_id = Config.DRIVE_FOLDER_IDS.get(folder_key)
+    # Get content from Telegram channel
+    content_list = await channel_service.get_past_exams_by_topic(context, db_user.stream, subject_key)
     
-    if not folder_id or folder_id.startswith("YOUR_"):  # Check for placeholder IDs
+    if not content_list:
         await update.message.reply_text(
             f"Past exam for {topic_text.capitalize()} topics not available for {db_user.stream.capitalize()} stream yet. "
-            f"Please ensure the Google Drive folder ID is configured correctly in config.py."
+            f"Please check the content channel or contact support."
         )
-        logger.info(f"No valid folder ID found or placeholder used for {folder_key} for user {db_user.user_id}.")
-        return
-    
-    files = drive_service.list_files(folder_id)
-    if not files:
-        await update.message.reply_text(
-            f"No past exam files found for {topic_text.capitalize()} topics yet.",
-            reply_markup=Keyboards.main_menu()
-        )
-        logger.info(f"No files found in folder {folder_id} for user {db_user.user_id}.")
+        logger.info(f"No topic-based past exam content found for {subject_key} {db_user.stream} for user {db_user.user_id}.")
         return
     
     message = f"📚 Past Exams by Topic - {topic_text.capitalize()} ({db_user.stream.capitalize()}):\n\n"
     buttons = []
     
-    for file in files:
-        message += f"📄 {file['name']}\n"
+    for content in content_list:
+        file_name = content.get('caption', 'Untitled')
+        message += f"📄 {file_name}\n"
         
-        # Add view button (topic-based past exams use view_only_url)
-        buttons.append([InlineKeyboardButton(f"👁️ View {file['name']}", url=file['view_only_url'])])
+        # Add view button using channel link
+        channel_link = content.get('channel_link', f"https://t.me/{channel_service.channel_username.lstrip('@')}/{content['message_id']}")
+        buttons.append([InlineKeyboardButton(f"👁️ View {file_name}", url=channel_link)])
         message += "\n"
     
     await update.message.reply_text(
@@ -367,31 +340,27 @@ async def handle_exam_tips(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info(f"Non-premium user {user.id} attempted to access Exam Tips.")
         return
 
-    folder_key = f"{db_user.stream}_exam_tips"
-    folder_id = Config.DRIVE_FOLDER_IDS.get(folder_key)
+    # Get content from Telegram channel
+    content_list = await channel_service.get_exam_tips(context, db_user.stream)
 
-    if not folder_id or folder_id.startswith("YOUR_"):  # Check for placeholder IDs
+    if not content_list:
         await update.message.reply_text(
             f"Exam tips not available for {db_user.stream.capitalize()} stream yet. "
-            f"Please ensure the Google Drive folder ID is configured correctly in config.py."
+            f"Please check the content channel or contact support."
         )
-        logger.info(f"No valid folder ID found or placeholder used for {folder_key} for user {user.id}.")
-        return
-
-    files = drive_service.list_files(folder_id, is_premium_content=True)  # Exam tips are premium
-    if not files:
-        await update.message.reply_text(f"No exam tips found for {db_user.stream.capitalize()} stream.")
-        logger.info(f"No files found in folder {folder_id} for user {user.id}.")
+        logger.info(f"No exam tips content found for {db_user.stream} for user {user.id}.")
         return
 
     message = f"💡 Exam Tips ({db_user.stream.capitalize()}):\n\n"
     buttons = []
     
-    for file in files:
-        message += f"📄 {file['name']}\n"
+    for content in content_list:
+        file_name = content.get('caption', 'Untitled')
+        message += f"📄 {file_name}\n"
         
-        # Add view button (exam tips are premium - use view_only_url)
-        buttons.append([InlineKeyboardButton(f"👁️ View {file['name']}", url=file['view_only_url'])])
+        # Add view button using channel link (exam tips are premium)
+        channel_link = content.get('channel_link', f"https://t.me/{channel_service.channel_username.lstrip('@')}/{content['message_id']}")
+        buttons.append([InlineKeyboardButton(f"👁️ View {file_name}", url=channel_link)])
         message += "\n"
 
     await update.message.reply_text(
@@ -428,31 +397,27 @@ async def handle_study_tips(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info(f"Non-premium user {user.id} attempted to access Study Tips.")
         return
 
-    folder_key = f"{db_user.stream}_study_tips"
-    folder_id = Config.DRIVE_FOLDER_IDS.get(folder_key)
+    # Get content from Telegram channel
+    content_list = await channel_service.get_study_tips(context, db_user.stream)
 
-    if not folder_id or folder_id.startswith("YOUR_"):  # Check for placeholder IDs
+    if not content_list:
         await update.message.reply_text(
             f"Study tips not available for {db_user.stream.capitalize()} stream yet. "
-            f"Please ensure the Google Drive folder ID is configured correctly in config.py."
+            f"Please check the content channel or contact support."
         )
-        logger.info(f"No valid folder ID found or placeholder used for {folder_key} for user {user.id}.")
-        return
-
-    files = drive_service.list_files(folder_id, is_premium_content=True)  # Study tips are premium
-    if not files:
-        await update.message.reply_text(f"No study tips found for {db_user.stream.capitalize()} stream.")
-        logger.info(f"No files found in folder {folder_id} for user {user.id}.")
+        logger.info(f"No study tips content found for {db_user.stream} for user {user.id}.")
         return
 
     message = f"📖 Study Tips ({db_user.stream.capitalize()}):\n\n"
     buttons = []
     
-    for file in files:
-        message += f"📄 {file['name']}\n"
+    for content in content_list:
+        file_name = content.get('caption', 'Untitled')
+        message += f"📄 {file_name}\n"
         
-        # Add view button (study tips are premium - use view_only_url)
-        buttons.append([InlineKeyboardButton(f"👁️ View {file['name']}", url=file['view_only_url'])])
+        # Add view button using channel link (study tips are premium)
+        channel_link = content.get('channel_link', f"https://t.me/{channel_service.channel_username.lstrip('@')}/{content['message_id']}")
+        buttons.append([InlineKeyboardButton(f"👁️ View {file_name}", url=channel_link)])
         message += "\n"
 
     await update.message.reply_text(

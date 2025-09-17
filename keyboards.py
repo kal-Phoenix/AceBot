@@ -97,6 +97,18 @@ class Keyboards:
             [f"Grade 11 {purpose}", f"Grade 12 {purpose}"],
             ["⬅️ Back to Resources"]
         ], resize_keyboard=True)
+    
+    @staticmethod
+    def curriculum_menu(grade: str, purpose: str):
+        """
+        Generates a menu for selecting curriculum type (Old/New).
+        :param grade: Grade level (e.g., "9", "10").
+        :param purpose: Resource type (e.g., "Textbooks", "Guide").
+        """
+        return ReplyKeyboardMarkup([
+            [f"Old Curriculum", f"New Curriculum"],
+            ["⬅️ Back to Resources"]
+        ], resize_keyboard=True)
 
     @staticmethod
     def subjects_menu(stream: str):
