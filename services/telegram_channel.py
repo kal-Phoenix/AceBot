@@ -61,25 +61,28 @@ class TelegramChannelService:
                         file_name = file_info.get('name', 'Untitled')
                         file_type = file_info.get('type', 'document')
                         
-                        # Send file directly to user
+                        # Send file directly to user with content protection for premium content
                         if file_type == 'document':
                             sent_msg = await context.bot.send_document(
                                 chat_id=user_id,
                                 document=file_id,
-                                caption=file_name
+                                caption=file_name,
+                                protect_content=is_premium
                             )
                         elif file_type == 'photo':
                             sent_msg = await context.bot.send_photo(
                                 chat_id=user_id,
                                 photo=file_id,
-                                caption=file_name
+                                caption=file_name,
+                                protect_content=is_premium
                             )
                         else:
                             # Default to document
                             sent_msg = await context.bot.send_document(
                                 chat_id=user_id,
                                 document=file_id,
-                                caption=file_name
+                                caption=file_name,
+                                protect_content=is_premium
                             )
                         
                         sent_files.append({

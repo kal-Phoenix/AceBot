@@ -37,6 +37,10 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle ALL non-command messages in one place."""
     message = update.message
     
+    # Check if message exists
+    if not message:
+        return
+    
     # Check for any media type first
     has_media = any([
         message.document,

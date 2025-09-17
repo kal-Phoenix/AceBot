@@ -550,7 +550,9 @@ class Config:
             {"file_id": "YOUR_SOCIAL_2001_EXAM_FILE_ID", "name": "Social Science Exam 2001", "type": "document"},
         ],
         "social_pastexam_2002": [
-            {"file_id": "YOUR_SOCIAL_2002_EXAM_FILE_ID", "name": "Social Science Exam 2002", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAPHaMraYeDxW3MuZhUrJMO3r5EgIowAAqkaAALhtlhSozYWVQE-J1k2BA", "name": "2002 English Exam", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAPIaMraYf2AjQABzqQIrwTrPq48owHCAAKqGgAC4bZYUrKTz-A2x39UNgQ", "name": "2002 Geography Exam", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAPJaMraYT8tj9fHr7UuRlPfjKt3HzQAAqsaAALhtlhSo3XaBEFMpDo2BA", "name": "2002 History Exam", "type": "document"},
         ],
         "social_pastexam_2003": [
             {"file_id": "YOUR_SOCIAL_2003_EXAM_FILE_ID", "name": "Social Science Exam 2003", "type": "document"},
