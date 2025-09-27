@@ -11,18 +11,22 @@ logger = logging.getLogger(__name__)
 class TelegramChannelService:
     """
     Service to handle content retrieval from a single Telegram channel
-    using hashtag-based organization instead of Google Drive folders.
+    using hashtag-based organization.
     """
     
     def __init__(self, channel_username: str = None):
         self.channel_username = channel_username or Config.CONTENT_CHANNEL_USERNAME
         self.channel_id = Config.CONTENT_CHANNEL_ID
-        
-    async def get_content(self, context: ContextTypes.DEFAULT_TYPE, 
-                         stream: str, resource_type: str, 
-                         subject: str = None, grade: str = None, 
-                         year: str = None, is_premium: bool = False, 
-                         user_id: int = None) -> List[Dict]:
+    
+    async def get_content(self, 
+                        context: ContextTypes.DEFAULT_TYPE, 
+                        stream: str, 
+                        resource_type: str, 
+                        subject: str = None, 
+                        grade: str = None, 
+                        year: str = None, 
+                        is_premium: bool = False,
+                        user_id: int = None) -> List[Dict]:
         """
         Retrieve content using direct file_id mapping.
         
@@ -89,16 +93,18 @@ class TelegramChannelService:
                             'file_id': file_id,
                             'file_name': file_name,
                             'sent': True,
-                            'sent_message_id': sent_msg.message_id
+                            'sent_message_id': sent_msg.message_id,
+                            'success': True
                         })
                         logger.info(f"Sent file {file_name} to user {user_id}")
                         
                     except Exception as e:
-                        logger.error(f"Failed to send file {file_info.get('name', file_id)} to user {user_id}: {e}")
+                        logger.error(f"Failed to send file {file_name} to user {user_id}: {e}")
                         sent_files.append({
                             'file_id': file_id,
-                            'file_name': file_info.get('name', 'Unknown'),
+                            'file_name': file_name,
                             'sent': False,
+                            'success': False,
                             'error': str(e)
                         })
                 

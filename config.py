@@ -2,7 +2,7 @@
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
+from channels_config import ChannelConfig
 load_dotenv()
 
 class Config:
@@ -27,11 +27,13 @@ class Config:
     # Google Drive Service Account Credentials Path (DEPRECATED - keeping for migration)
     GOOGLE_DRIVE_CREDENTIALS_PATH = os.getenv("GOOGLE_DRIVE_CREDENTIALS_PATH", "credentials.json")
     
-    # Telegram Channel Configuration (NEW)
-    CONTENT_CHANNEL_USERNAME = os.getenv("CONTENT_CHANNEL_USERNAME", "@acebot_content")
-    CONTENT_CHANNEL_ID = os.getenv("CONTENT_CHANNEL_ID", "-1001234567890")
-    if CONTENT_CHANNEL_ID == "-1001234567890":
-        print("WARNING: CONTENT_CHANNEL_ID is not set in environment variables or .env file. Please set it.")
+       # Telegram Channel Configuration
+    # Backward compatibility (deprecated, use ChannelConfig instead)
+    CONTENT_CHANNEL_ID = os.getenv("OLD_TEXTBOOKS_CHANNEL_ID")  # Default to old textbooks channel
+    CONTENT_CHANNEL_USERNAME = None  # Not used for private channels
+    
+    # Channel configuration
+    CHANNELS = ChannelConfig.CHANNELS
 
     ADMIN_BOT_TOKEN = os.getenv("ADMIN_BOT_TOKEN", "YOUR_ADMIN_BOT_TOKEN_HERE")
     if ADMIN_BOT_TOKEN == "YOUR_ADMIN_BOT_TOKEN_HERE":
@@ -98,13 +100,13 @@ class Config:
         # Natural Stream Textbooks - Old Curriculum
         "natural_textbook_grade9_old": [
             {"file_id": "BQACAgQAAyEFAASkzI5MAAMxaMq6FPhMHdlGN2_B3NDTKz1JjEgAAlcZAALhtlhSPzyJU_cXm8c2BA", "name": "Grade 9 Amharic Textbook (Old Curriculum)", "type": "document"},
-            {"file_id": "BQACAgQAAyEFAASkzI5MAAM1aMq6FFGfTRI1VMeWEtRvX59huWsAAlsZAALhtlhSJeV865K1L-k2BA", "name": "Grade 9 English Textbook (Old Curriculum)", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAMyaMq6FPEWMb-8GJmz37-h5UwEZysAAlgZAALhtlhSmaa2COiJZFA2BA", "name": "Grade 9 Biology Textbook (Old Curriculum)", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAMzaMq6FCp3SQn8blYGIAUO19_KFNYAAlkZAALhtlhSEb3cCJdJzRE2BA", "name": "Grade 9 Chemistry Textbook (Old Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAAM0aMq6FJEejA-E5i2YuzK6qux0dmYAAloZAALhtlhSTTwjNOxl12c2BA", "name": "Grade 9 Civics Textbook (Old Curriculum)", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAM1aMq6FFGfTRI1VMeWEtRvX59huWsAAlsZAALhtlhSJeV865K1L-k2BA", "name": "Grade 9 English Textbook (Old Curriculum)", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAM4aMq6FGxunZXdfp7UTamIyghT48gAAl4ZAALhtlhSC2vaLYN5nfg2BA", "name": "Grade 9 IT Textbook (Old Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAAM5aMq6FPCGnSNaQYoJMhG44D0TX3QAAmMZAALhtlhSJHC7v7oiRFM2BA", "name": "Grade 9 Mathematics Textbook (Old Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAAM6aMq6FCDSrhw5uW_rkk5Wnitm7uAAAmQZAALhtlhSUgoSjm2D1YU2BA", "name": "Grade 9 Physics Textbook (Old Curriculum)", "type": "document"},
-            {"file_id": "BQACAgQAAyEFAASkzI5MAAMzaMq6FCp3SQn8blYGIAUO19_KFNYAAlkZAALhtlhSEb3cCJdJzRE2BA", "name": "Grade 9 Chemistry Textbook (Old Curriculum)", "type": "document"},
-            {"file_id": "BQACAgQAAyEFAASkzI5MAAMyaMq6FPEWMb-8GJmz37-h5UwEZysAAlgZAALhtlhSmaa2COiJZFA2BA", "name": "Grade 9 Biology Textbook (Old Curriculum)", "type": "document"},
-            {"file_id": "BQACAgQAAyEFAASkzI5MAAM4aMq6FGxunZXdfp7UTamIyghT48gAAl4ZAALhtlhSC2vaLYN5nfg2BA", "name": "Grade 9 IT Textbook (Old Curriculum)", "type": "document"},
         ],
         # Natural Stream Textbooks - New Curriculum
         "natural_textbook_grade9_new": [
@@ -123,17 +125,17 @@ class Config:
             {"file_id": "BQACAgQAAyEFAASkzI5MAANFaMq7ru7ZfUyagxkTLS_GUQ8RtCsAAnwZAALhtlhSpwmT8GuaNIU2BA", "name": "Grade 10 Mathematics Textbook (Old Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAANGaMq7rjjR_z_HSB5AM-Rl4TPXjL8AAn4ZAALhtlhSgEYLYd37jus2BA", "name": "Grade 10 Physics Textbook (Old Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAAM_aMq7rpBKnhdvkdjmsB5bvBbN4roAAmoZAALhtlhSj-TxiR1SBZ82BA", "name": "Grade 10 Chemistry Textbook (Old Curriculum)", "type": "document"},
-            {"file_id": "BQACAgQAAyEFAASkzI5MAAM-aMq7rvCfo4nIvv7nTrbS75gl7I4AAmgZAALhtlhSmNA7f2Vg7kM2BA", "name": "Grade 10 Biology Textbook (Old Curriculum)", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAO-aMq7rvCfo4nIvv7nTrbS75gl7I4AAmgZAALhtlhSmNA7f2Vg7kM2BA", "name": "Grade 10 Biology Textbook (Old Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAANEaMq7rnSJYM_6WLn_647tC1nnVwQAAnkZAALhtlhSuZqDgUhfwgE2BA", "name": "Grade 10 IT Textbook (Old Curriculum)", "type": "document"},
         ],
         "natural_textbook_grade10_new": [
             {"file_id": "BQACAgQAAyEFAASkzI5MAANpaMrJaptfb6PtXaDtSmjjEJ9rHDMAAswZAALhtlhSWSZK5GMIpT82BA", "name": "Grade 10 Citizenship Textbook (New Curriculum)", "type": "document"},
-            {"file_id": "BQACAgQAAyEFAASkzI5MAANvaMrJaljt9-9LTFz3uJAvW5GQFvQAAtUZAALhtlhSldmkxsKRxoQ2BA", "name": "Grade 10 Mathematics Textbook (New Curriculum)", "type": "document"},
-            {"file_id": "BQACAgQAAyEFAASkzI5MAANwaMrJatKTrAhqG8vCrJm4j-oWc0sAAtYZAALhtlhSvyR_gn_vdRw2BA", "name": "Grade 10 Physics Textbook (New Curriculum)", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAANlaMrTKsOlqc8qzf3SStpMxVDLp9QAAoEaAALhtlhSJKueWx9WOh82BA", "name": "Grade 10 Mathematics Textbook (New Curriculum)", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAOwaMrSWFcYc23jLMuEjHYyRtJGhj0AAnkaAALhtlhSMhR-yN8gx_M2BA", "name": "Grade 10 Physics Textbook (New Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAANoaMrJai0KNBBw6UE3VpbYwAru46UAAsoZAALhtlhSOBY3NgyPbiY2BA", "name": "Grade 10 Chemistry Textbook (New Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAANnaMrJasxZmAhyRU1ywMxQYUyCez0AAskZAALhtlhSOdeTDqh7nb02BA", "name": "Grade 10 Biology Textbook (New Curriculum)", "type": "document"},
-            {"file_id": "BQACAgQAAyEFAASkzI5MAANuaMrJaguVKjtOHeKx4dzwIneh97IAAtIZAALhtlhSRydB8Bc6cLg2BA", "name": "Grade 10 IT Textbook (New Curriculum)", "type": "document"},
-            {"file_id": "BQACAgQAAyEFAASkzI5MAANtaMrJaobAC972S5a39oaDhOVFN5QAAtEZAALhtlhSCz1NXr-LXoE2BA", "name": "Grade 10 HPE Textbook (New Curriculum)", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAOwaMrSWFcYc23jLMuEjHYyRtJGhj0AAnkaAALhtlhSMhR-yN8gx_M2BA", "name": "Grade 10 IT Textbook (New Curriculum)", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAOwaMrSWFcYc23jLMuEjHYyRtJGhj0AAnkaAALhtlhSMhR-yN8gx_M2BA", "name": "Grade 10 HPE Textbook (New Curriculum)", "type": "document"},
         ],
         "natural_textbook_grade11_old": [
             {"file_id": "BQACAgQAAyEFAASkzI5MAANHaMq-t7rwRD88_AuXbPyr1Kdb4acAAn8ZAALhtlhSAwZVti7ddh02BA", "name": "Grade 11 Amharic Textbook (Old Curriculum)", "type": "document"},
@@ -145,13 +147,13 @@ class Config:
             {"file_id": "BQACAgQAAyEFAASkzI5MAANIaMq-t1bld1P4QKT7zoeq3jI4TYkAAoMZAALhtlhSF2adOOtoIYU2BA", "name": "Grade 11 Biology Textbook (Old Curriculum)", "type": "document"},
         ],
         "natural_textbook_grade11_new": [
-            {"file_id": "BQACAgQAAyEFAASkzI5MAAN1aMrLawoWvO0yYOg7bcZOMiE-mgEAAvQZAALhtlhSNgIxFbdJQK02BA", "name": "Grade 11 English Textbook (New Curriculum)", "type": "document"},
-            {"file_id": "BQACAgQAAyEFAASkzI5MAAN5aMrLa7uDwcV4o3G5MpC90WAE9VMAAgwaAALhtlhSN7vMYKAopeE2BA", "name": "Grade 11 Mathematics Textbook (New Curriculum)", "type": "document"},
-            {"file_id": "BQACAgQAAyEFAASkzI5MAAN6aMrLa3h8-XAhDR5AvpMpMoZEoewAAg8aAALhtlhSXMuhuPO9H7w2BA", "name": "Grade 11 Physics Textbook (New Curriculum)", "type": "document"},
-            {"file_id": "BQACAgQAAyEFAASkzI5MAANzaMrLa4FIMASwS-f3g5GEiGjIAk8AAuEZAALhtlhSxFwodutOEsU2BA", "name": "Grade 11 Chemistry Textbook (New Curriculum)", "type": "document"},
-            {"file_id": "BQACAgQAAyEFAASkzI5MAANyaMrLa0tFkWCDE0PFYikaHOCfxFoAAt4ZAALhtlhSpWwJax104Bo2BA", "name": "Grade 11 Biology Textbook (New Curriculum)", "type": "document"},
-            {"file_id": "BQACAgQAAyEFAASkzI5MAANxaMrLa1x0Ti2tEFOuXrEOqUII-q8AAtoZAALhtlhS19q1ShuI_kQ2BA", "name": "Grade 11 Agriculture Textbook (New Curriculum)", "type": "document"},
-            {"file_id": "BQACAgQAAyEFAASkzI5MAAN4aMrLa0wTDOuvJsOjoJtRb-rORPAAAvkZAALhtlhSIEq5OaQ7Edk2BA", "name": "Grade 11 IT Textbook (New Curriculum)", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAO9aMrNZnbe6P08VkgllQYvQ0ONyn4AAj8aAALhtlhSIfujbvX1E4I2BA", "name": "Grade 11 English Textbook (New Curriculum)", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAOEaMrNZrTTNXtqiWlg0b3dSkKTcUcAAj4aAALhtlhSBP-qri2kVz82BA", "name": "Grade 11 Mathematics Textbook (New Curriculum)", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAOFaMrNZnbe6P08VkgllQYvQ0ONyn4AAj8aAALhtlhSIfujbvX1E4I2BA", "name": "Grade 11 Physics Textbook (New Curriculum)", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAO-aMrNZu5uQx5PfdhvUoOorqTMl_EAAjMaAALhtlhSFZNnXvkEmFY2BA", "name": "Grade 11 Chemistry Textbook (New Curriculum)", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAO9aMrNZuTXnCR9mRltSBo2ZrzhCicAAi8aAALhtlhSESfy3asHwSQ2BA", "name": "Grade 11 Biology Textbook (New Curriculum)", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAO8aMrNZu5uQx5PfdhvUoOorqTMl_EAAjMaAALhtlhSFZNnXvkEmFY2BA", "name": "Grade 11 Agriculture Textbook (New Curriculum)", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAO6aMrNZoAxThQmNE2q2ktZ2Sym26wAAjoaAALhtlhS4GdUmuymh3Y2BA", "name": "Grade 11 IT Textbook (New Curriculum)", "type": "document"},
         ],
         "natural_textbook_grade12_old": [
             {"file_id": "BQACAgQAAyEFAASkzI5MAANSaMrCniYuxIjRvZDH_MAPYvV27-wAApoZAALhtlhS0_Usx2bavkA2BA", "name": "Grade 12 Amharic Textbook (Old Curriculum)", "type": "document"},
@@ -166,9 +168,9 @@ class Config:
             {"file_id": "BQACAgQAAyEFAASkzI5MAAOAaMrNZtHvCkMCj5H7wNVdDK0aORIAAjUaAALhtlhSCxFgWqCb9ZY2BA", "name": "Grade 12 English Textbook (New Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAAOEaMrNZrTTNXtqiWlg0b3dSkKTcUcAAj4aAALhtlhSBP-qri2kVz82BA", "name": "Grade 12 Mathematics Textbook (New Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAAOFaMrNZnbe6P08VkgllQYvQ0ONyn4AAj8aAALhtlhSIfujbvX1E4I2BA", "name": "Grade 12 Physics Textbook (New Curriculum)", "type": "document"},
-            {"file_id": "BQACAgQAAyEFAASkzI5MAAN-aMrNZp_hEQnaaIMjOiWo-u-iHLkAAjIaAALhtlhSsrPe8MhJQgk2BA", "name": "Grade 12 Chemistry Textbook (New Curriculum)", "type": "document"},
-            {"file_id": "BQACAgQAAyEFAASkzI5MAAN9aMrNZuTXnCR9mRltSBo2ZrzhCicAAi8aAALhtlhSESfy3asHwSQ2BA", "name": "Grade 12 Biology Textbook (New Curriculum)", "type": "document"},
-            {"file_id": "BQACAgQAAyEFAASkzI5MAAODaMrNZoAxThQmNE2q2ktZ2Sym26wAAjoaAALhtlhS4GdUmuymh3Y2BA", "name": "Grade 12 IT Textbook (New Curriculum)", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAO-aMrNZu5uQx5PfdhvUoOorqTMl_EAAjMaAALhtlhSFZNnXvkEmFY2BA", "name": "Grade 12 Chemistry Textbook (New Curriculum)", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAO9aMrNZuTXnCR9mRltSBo2ZrzhCicAAi8aAALhtlhSESfy3asHwSQ2BA", "name": "Grade 12 Biology Textbook (New Curriculum)", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAO6aMrNZoAxThQmNE2q2ktZ2Sym26wAAjoaAALhtlhS4GdUmuymh3Y2BA", "name": "Grade 12 IT Textbook (New Curriculum)", "type": "document"},
         ],
         
         # Social Stream Textbooks
@@ -183,10 +185,7 @@ class Config:
         "social_textbook_grade9_new": [
             {"file_id": "BQACAgQAAyEFAASkzI5MAANhaMrI3EamtdGzkgeJ8BrZq0sFy00AAsIZAALhtlhSZ2Ff6whdrKw2BA", "name": "Grade 9 English Textbook (New Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAANfaMrI3H5DCTIxYDdDl4cDms_Pe00AArwZAALhtlhS8ppSjDK-qEQ2BA", "name": "Grade 9 Citizenship Textbook (New Curriculum)", "type": "document"},
-            {"file_id": "BQACAgQAAyEFAASkzI5MAANiaMrI3AEBFqSG_VdFOtUZrIHL2UEAAsMZAALhtlhS7odgujTwrlc2BA", "name": "Grade 9 Geography Textbook (New Curriculum)", "type": "document"},
-            {"file_id": "BQACAgQAAyEFAASkzI5MAANjaMrI3I19XQ-7cAABfBUUVm-wR6DdAALEGQAC4bZYUoIlIW9nDWk2NgQ", "name": "Grade 9 History Textbook (New Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAANmaMrI3Dv6ZlpbLBr0Ctj3N819MlEAAsgZAALhtlhS2lAbRwdrz9A2BA", "name": "Grade 9 Mathematics Textbook (New Curriculum)", "type": "document"},
-            {"file_id": "BQACAgQAAyEFAASkzI5MAANgaMrI3MuOLSfHsKS4GOW7ddTEH3IAAr0ZAALhtlhStS4QIQUF4lI2BA", "name": "Grade 9 Economics Textbook (New Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAANkaMrI3HIm2ItYvSBrTiXZhBJrZywAAsUZAALhtlhSXURUO-z_3QY2BA", "name": "Grade 9 HPE Textbook (New Curriculum)", "type": "document"},
         ],
         "social_textbook_grade10_old": [
@@ -201,7 +200,7 @@ class Config:
             {"file_id": "BQACAgQAAyEFAASkzI5MAANpaMrJaptfb6PtXaDtSmjjEJ9rHDMAAswZAALhtlhSWSZK5GMIpT82BA", "name": "Grade 10 Citizenship Textbook (New Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAANraMrJani3zFCxl-01x2DCz9qxHGUAAs8ZAALhtlhSF0FGnf1xrxI2BA", "name": "Grade 10 Geography Textbook (New Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAANsaMrJavNfbJMO5BVkrBO5oqFC5IAAAtAZAALhtlhSL7HpLPjb99M2BA", "name": "Grade 10 History Textbook (New Curriculum)", "type": "document"},
-            {"file_id": "BQACAgQAAyEFAASkzI5MAANvaMrJaljt9-9LTFz3uJAvW5GQFvQAAtUZAALhtlhSldmkxsKRxoQ2BA", "name": "Grade 10 Mathematics Textbook (New Curriculum)", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAANlaMrTKsOlqc8qzf3SStpMxVDLp9QAAoEaAALhtlhSJKueWx9WOh82BA", "name": "Grade 10 Mathematics Textbook (New Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAANqaMrJal1j3foWgeRCdt8WZs0COPsAAs0ZAALhtlhS-k_vDrOAQ5w2BA", "name": "Grade 10 Economics Textbook (New Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAANtaMrJaobAC972S5a39oaDhOVFN5QAAtEZAALhtlhSCz1NXr-LXoE2BA", "name": "Grade 10 HPE Textbook (New Curriculum)", "type": "document"},
         ],
@@ -216,8 +215,8 @@ class Config:
             {"file_id": "BQACAgQAAyEFAASkzI5MAANNaMq-ty7_g3wSAjnRjGbjsasL4bwAAowZAALhtlhS6a7SL2mdQTM2BA", "name": "Grade 11 General Business Textbook (Old Curriculum)", "type": "document"},
         ],
         "social_textbook_grade11_new": [
-            {"file_id": "BQACAgQAAyEFAASkzI5MAAN1aMrLawoWvO0yYOg7bcZOMiE-mgEAAvQZAALhtlhSNgIxFbdJQK02BA", "name": "Grade 11 English Textbook (New Curriculum)", "type": "document"},
-            {"file_id": "BQACAgQAAyEFAASkzI5MAAN2aMrLayKjnlVx0gnfLefoEwAB6A-TAAL2GQAC4bZYUglGwYya9sbENgQ", "name": "Grade 11 Geography Textbook (New Curriculum)", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAO9aMrNZnbe6P08VkgllQYvQ0ONyn4AAj8aAALhtlhSIfujbvX1E4I2BA", "name": "Grade 11 English Textbook (New Curriculum)", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAO2aMrLayKjnlVx0gnfLefoEwAB6A-TAAL2GQAC4bZYUglGwYya9sbENgQ", "name": "Grade 11 Geography Textbook (New Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAAN3aMrLa1pIzxQtR7TbMW5jmm08GBcAAvgZAALhtlhStq9YLwW7zEI2BA", "name": "Grade 11 History Textbook (New Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAAN5aMrLa7uDwcV4o3G5MpC90WAE9VMAAgwaAALhtlhSN7vMYKAopeE2BA", "name": "Grade 11 Mathematics Textbook (New Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAAN0aMrLa8NuLiSxx5WzMc2ke42lh2QAAuQZAALhtlhSR3XEZ2IWa8w2BA", "name": "Grade 11 Economics Textbook (New Curriculum)", "type": "document"},
@@ -232,7 +231,7 @@ class Config:
         ],
         "social_textbook_grade12_new": [
             {"file_id": "BQACAgQAAyEFAASkzI5MAAOAaMrNZtHvCkMCj5H7wNVdDK0aORIAAjUaAALhtlhSCxFgWqCb9ZY2BA", "name": "Grade 12 English Textbook (New Curriculum)", "type": "document"},
-            {"file_id": "BQACAgQAAyEFAASkzI5MAAOBaMrNZuvsqctoi_OXBRq09iknucAAAjcaAALhtlhSgNIXHUq_R-02BA", "name": "Grade 12 Geography Textbook (New Curriculum)", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAN_aMrNZuvsqctoi_OXBRq09iknucAAAjcaAALhtlhSgNIXHUq_R-02BA", "name": "Grade 12 Geography Textbook (New Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAAOCaMrNZhBV3MgMfZ2IHWbFBlsh8jkAAjkaAALhtlhS5-mYVjf1iYs2BA", "name": "Grade 12 History Textbook (New Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAAOEaMrNZrTTNXtqiWlg0b3dSkKTcUcAAj4aAALhtlhSBP-qri2kVz82BA", "name": "Grade 12 Mathematics Textbook (New Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAAN_aMrNZu5uQx5PfdhvUoOorqTMl_EAAjMaAALhtlhSFZNnXvkEmFY2BA", "name": "Grade 12 Economics Textbook (New Curriculum)", "type": "document"},
@@ -253,7 +252,7 @@ class Config:
         ],
         # Natural Stream Teacher's Guides - New Curriculum
         "natural_guide_grade9_new": [
-            {"file_id": "BQACAgQAAyEFAASkzI5MAAOnaMrSB5v-B6EI4HL1tJyTU0OCyXsAAnAaAALhtlhSsdWMnnp9nvw2BA", "name": "Mathematics Teacher's Guide Grade 9 (New Curriculum)", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAOnaMrSB5v-B6EI4HL1tJyTU0OCyXsAAnAaAALhtlhSUgoSjm2D1YU2BA", "name": "Mathematics Teacher's Guide Grade 9 (New Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAAOoaMrSB3bZmYKLUGRYEXpqxmZEYdQAAnEaAALhtlhSLbnJdzKIlOM2BA", "name": "Physics Teacher's Guide Grade 9 (New Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAAOiaMrSB2FXEUDjXzcAAdxrTpB07RRhAAJqGgAC4bZYUtB9Nb0FUkCENgQ", "name": "Biology Teacher's Guide Grade 9 (New Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAAOmaMrSB19uCJuSLt7LZESEdmPn7E4AAm8aAALhtlhSCP2JUetVDLI2BA", "name": "IT Teacher's Guide Grade 9 (New Curriculum)", "type": "document"},
@@ -267,7 +266,7 @@ class Config:
             {"file_id": "BQACAgQAAyEFAASkzI5MAAOUaMrRXspi3D1EheiDX0jhNguc-DMAAlwaAALhtlhSWt1yaS4Rq382BA", "name": "Physics Teacher's Guide Grade 10 (Old Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAAOPaMrRXtD-w-hMlSvxIncKEiJXrPUAAlcaAALhtlhSRsiMfqcE5p42BA", "name": "Chemistry Teacher's Guide Grade 10 (Old Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAAOOaMrRXsVH1YcgEUl-RUxuGS9_tiQAAlYaAALhtlhSjP4Xhp6Db1k2BA", "name": "Biology Teacher's Guide Grade 10 (Old Curriculum)", "type": "document"},
-            {"file_id": "BQACAgQAAyEFAASkzI5MAAOVaMrRXs20YKemLPZzLbH-KpXduJcAAl0aAALhtlhS0QErLnzxU402BA", "name": "IT Teacher's Guide Grade 10 (Old Curriculum)", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAAS-hksYAAMfaNd97-jRzVUEdQo6xPK8ik5X7OsAAmccAAKXIbhSK4C5Kjev6yw2BA", "name": "IT Teacher's Guide Grade 10 (Old Curriculum)", "type": "document"},
         ],
         "natural_guide_grade10_new": [
             {"file_id": "BQACAgQAAyEFAASkzI5MAAOtaMrSWBL2kuUAAdF_OkGvxtFBGw8FAAJ2GgAC4bZYUlkfN2Ruc7IQNgQ", "name": "English Teacher's Guide Grade 10 (New Curriculum)", "type": "document"},
@@ -317,7 +316,7 @@ class Config:
         "social_guide_grade9_new": [
             {"file_id": "BQACAgQAAyEFAASkzI5MAAOjaMrSB8MzCdgMHvAmZroCLnnuSV0AAmsaAALhtlhSdLlBdkO0Xz42BA", "name": "Geography Teacher's Guide Grade 9 (New Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAAOkaMrSB1zL4mGiak6jNovzltSMAQYAAmwaAALhtlhSRmEQ3YxWofE2BA", "name": "History Teacher's Guide Grade 9 (New Curriculum)", "type": "document"},
-            {"file_id": "BQACAgQAAyEFAASkzI5MAAOnaMrSB5v-B6EI4HL1tJyTU0OCyXsAAnAaAALhtlhSsdWMnnp9nvw2BA", "name": "Mathematics Teacher's Guide Grade 9 (New Curriculum)", "type": "document"},
+            {"file_id": "BQACAgQAAyEFAASkzI5MAAOnaMrSB5v-B6EI4HL1tJyTU0OCyXsAAnAaAALhtlhSUgoSjm2D1YU2BA", "name": "Mathematics Teacher's Guide Grade 9 (New Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAAOlaMrSB5uUXaqy5ZyaFAlrCjmNyhEAAm0aAALhtlhSAAHR5JPXV8uQNgQ", "name": "HPE Teacher's Guide Grade 9 (New Curriculum)", "type": "document"},
             {"file_id": "BQACAgQAAyEFAASkzI5MAAOpaMrSB4HZ2vSfSWAp5iDWi0bEmPEAAnIaAALhtlhS7hGCh4H5Lho2BA", "name": "PVA Teacher's Guide Grade 9 (New Curriculum)", "type": "document"},
         ],
@@ -493,40 +492,40 @@ class Config:
         "natural_pastexam_2001": [
             {"file_id": "YOUR_NATURAL_2001_EXAM_FILE_ID", "name": "Natural Science Exam 2001", "type": "document"},
         ],
-        "natural_pastexam_2002": [
+        "natural_pastexam_2002": [  # Premium
             {"file_id": "YOUR_NATURAL_2002_EXAM_FILE_ID", "name": "Natural Science Exam 2002", "type": "document"},
         ],
-        "natural_pastexam_2003": [
+        "natural_pastexam_2003": [  # Premium
             {"file_id": "YOUR_NATURAL_2003_EXAM_FILE_ID", "name": "Natural Science Exam 2003", "type": "document"},
         ],
-        "natural_pastexam_2004": [
+        "natural_pastexam_2004": [  # Premium
             {"file_id": "YOUR_NATURAL_2004_EXAM_FILE_ID", "name": "Natural Science Exam 2004", "type": "document"},
         ],
-        "natural_pastexam_2005": [
+        "natural_pastexam_2005": [  # Premium
             {"file_id": "YOUR_NATURAL_2005_EXAM_FILE_ID", "name": "Natural Science Exam 2005", "type": "document"},
         ],
-        "natural_pastexam_2006": [
+        "natural_pastexam_2006": [  # Premium
             {"file_id": "YOUR_NATURAL_2006_EXAM_FILE_ID", "name": "Natural Science Exam 2006", "type": "document"},
         ],
-        "natural_pastexam_2007": [
+        "natural_pastexam_2007": [  # Premium
             {"file_id": "YOUR_NATURAL_2007_EXAM_FILE_ID", "name": "Natural Science Exam 2007", "type": "document"},
         ],
-        "natural_pastexam_2008": [
+        "natural_pastexam_2008": [  # Premium
             {"file_id": "YOUR_NATURAL_2008_EXAM_FILE_ID", "name": "Natural Science Exam 2008", "type": "document"},
         ],
-        "natural_pastexam_2009": [
+        "natural_pastexam_2009": [  # Premium
             {"file_id": "YOUR_NATURAL_2009_EXAM_FILE_ID", "name": "Natural Science Exam 2009", "type": "document"},
         ],
-        "natural_pastexam_2010": [
+        "natural_pastexam_2010": [  # Premium
             {"file_id": "YOUR_NATURAL_2010_EXAM_FILE_ID", "name": "Natural Science Exam 2010", "type": "document"},
         ],
-        "natural_pastexam_2011": [
+        "natural_pastexam_2011": [  # Premium
             {"file_id": "YOUR_NATURAL_2011_EXAM_FILE_ID", "name": "Natural Science Exam 2011", "type": "document"},
         ],
-        "natural_pastexam_2012": [
+        "natural_pastexam_2012": [  # Premium                                           
             {"file_id": "YOUR_NATURAL_2012_EXAM_FILE_ID", "name": "Natural Science Exam 2012", "type": "document"},
         ],
-        "natural_pastexam_2013": [
+        "natural_pastexam_2013": [  # Premium
             {"file_id": "YOUR_NATURAL_2013_EXAM_FILE_ID", "name": "Natural Science Exam 2013", "type": "document"},
         ],
         "natural_pastexam_2014": [  # Premium
@@ -544,47 +543,45 @@ class Config:
         
         # Social Stream Past Exams (2000-2017)
         "social_pastexam_2000": [
-            {"file_id": "BQACAgQAAxkBAAIC6WjKZsGOxyJuZ0P-NEUqkaX0Wae-AAKxGQAC4bZQUvsBXtwNzQABVjYE", "name": "2000 Economics Exam", "type": "document"},
+            {"file_id": "YOUR_SOCIAL_2000_EXAM_FILE_ID", "name": "Social Science Exam 2000", "type": "document"},
         ],
-        "social_pastexam_2001": [
+        "social_pastexam_2001": [  
             {"file_id": "YOUR_SOCIAL_2001_EXAM_FILE_ID", "name": "Social Science Exam 2001", "type": "document"},
         ],
-        "social_pastexam_2002": [
-            {"file_id": "BQACAgQAAyEFAASkzI5MAAPHaMraYeDxW3MuZhUrJMO3r5EgIowAAqkaAALhtlhSozYWVQE-J1k2BA", "name": "2002 English Exam", "type": "document"},
-            {"file_id": "BQACAgQAAyEFAASkzI5MAAPIaMraYf2AjQABzqQIrwTrPq48owHCAAKqGgAC4bZYUrKTz-A2x39UNgQ", "name": "2002 Geography Exam", "type": "document"},
-            {"file_id": "BQACAgQAAyEFAASkzI5MAAPJaMraYT8tj9fHr7UuRlPfjKt3HzQAAqsaAALhtlhSo3XaBEFMpDo2BA", "name": "2002 History Exam", "type": "document"},
+        "social_pastexam_2002": [  # Premium
+            {"file_id": "YOUR_SOCIAL_2002_EXAM_FILE_ID", "name": "Social Science Exam 2002", "type": "document"},
         ],
-        "social_pastexam_2003": [
+        "social_pastexam_2003": [  # Premium
             {"file_id": "YOUR_SOCIAL_2003_EXAM_FILE_ID", "name": "Social Science Exam 2003", "type": "document"},
         ],
-        "social_pastexam_2004": [
+        "social_pastexam_2004": [  # Premium
             {"file_id": "YOUR_SOCIAL_2004_EXAM_FILE_ID", "name": "Social Science Exam 2004", "type": "document"},
         ],
-        "social_pastexam_2005": [
+        "social_pastexam_2005": [  # Premium
             {"file_id": "YOUR_SOCIAL_2005_EXAM_FILE_ID", "name": "Social Science Exam 2005", "type": "document"},
         ],
-        "social_pastexam_2006": [
+        "social_pastexam_2006": [  # Premium
             {"file_id": "YOUR_SOCIAL_2006_EXAM_FILE_ID", "name": "Social Science Exam 2006", "type": "document"},
         ],
-        "social_pastexam_2007": [
+        "social_pastexam_2007": [  # Premium
             {"file_id": "YOUR_SOCIAL_2007_EXAM_FILE_ID", "name": "Social Science Exam 2007", "type": "document"},
         ],
-        "social_pastexam_2008": [
+        "social_pastexam_2008": [  # Premium
             {"file_id": "YOUR_SOCIAL_2008_EXAM_FILE_ID", "name": "Social Science Exam 2008", "type": "document"},
         ],
-        "social_pastexam_2009": [
+        "social_pastexam_2009": [  # Premium
             {"file_id": "YOUR_SOCIAL_2009_EXAM_FILE_ID", "name": "Social Science Exam 2009", "type": "document"},
         ],
-        "social_pastexam_2010": [
+        "social_pastexam_2010": [  # Premium
             {"file_id": "YOUR_SOCIAL_2010_EXAM_FILE_ID", "name": "Social Science Exam 2010", "type": "document"},
         ],
-        "social_pastexam_2011": [
+        "social_pastexam_2011": [  # Premium
             {"file_id": "YOUR_SOCIAL_2011_EXAM_FILE_ID", "name": "Social Science Exam 2011", "type": "document"},
         ],
-        "social_pastexam_2012": [
+        "social_pastexam_2012": [  # Premium
             {"file_id": "YOUR_SOCIAL_2012_EXAM_FILE_ID", "name": "Social Science Exam 2012", "type": "document"},
         ],
-        "social_pastexam_2013": [
+        "social_pastexam_2013": [  # Premium
             {"file_id": "YOUR_SOCIAL_2013_EXAM_FILE_ID", "name": "Social Science Exam 2013", "type": "document"},
         ],
         "social_pastexam_2014": [  # Premium
@@ -607,7 +604,7 @@ class Config:
         
         "natural_examtips": [
             {"file_id": "YOUR_NATURAL_EXAM_TIPS_FILE_ID", "name": "Natural Science Exam Tips", "type": "document"},
-        ],
+],
         "social_examtips": [
             {"file_id": "YOUR_SOCIAL_EXAM_TIPS_FILE_ID", "name": "Social Science Exam Tips", "type": "document"},
         ],

@@ -184,8 +184,8 @@ async def _process_past_exam_year_selection(update: Update, context: ContextType
         logger.warning(f"User {db_user.user_id} sent non-integer exam year: {year_text}")
         return
 
-    # PREMIUM CHECK for Past Exam Years (2002-2017, only 2000-2001 are free)
-    if year >= 2002 and not db_user.is_premium:
+    # PREMIUM CHECK for Past Exam Years (only 2000-2001 are free, rest are premium)
+    if year not in [2000, 2001] and not db_user.is_premium:
         await update.message.reply_text(
             "✨ *Premium Content* ✨\n\n"
             f"📚 *Past Exam {year}* is exclusive to our premium members!\n\n"
@@ -328,7 +328,7 @@ async def _process_past_exam_topic_selection(update: Update, context: ContextTyp
 
 
 async def handle_exam_tips(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Fetches and displays exam tips based on the user's stream."""
+    """Fetches and sends exam tips directly to the user based on their stream."""
     user = update.effective_user
     db_user = User.find(user.id)
 
@@ -354,34 +354,37 @@ async def handle_exam_tips(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logger.info(f"Non-premium user {user.id} attempted to access Exam Tips.")
         return
 
-    # Get content from Telegram channel
-    content_list = await channel_service.get_exam_tips(context, db_user.stream)
-
-    if not content_list:
-        await update.message.reply_text(
-            f"Exam tips not available for {db_user.stream.capitalize()} stream yet. "
-            f"Please check the content channel or contact support."
-        )
-        logger.info(f"No exam tips content found for {db_user.stream} for user {user.id}.")
-        return
-
-    message = f"💡 Exam Tips ({db_user.stream.capitalize()}):\n\n"
-    buttons = []
-    
-    for content in content_list:
-        file_name = content.get('caption', 'Untitled')
-        message += f"📄 {file_name}\n"
+    try:
+        # Get and send exam tips directly to the user
+        sent_files = await channel_service.get_exam_tips(context, db_user.stream, user_id=user.id)
         
-        # Add view button using channel link (exam tips are premium)
-        channel_link = content.get('channel_link', f"https://t.me/{channel_service.channel_username.lstrip('@')}/{content['message_id']}")
-        buttons.append([InlineKeyboardButton(f"👁️ View {file_name}", url=channel_link)])
-        message += "\n"
-
-    await update.message.reply_text(
-        message, 
-        reply_markup=InlineKeyboardMarkup(buttons) if buttons else Keyboards.main_menu()
-    )
-    logger.info(f"User {user.id} received exam tips.")
+        if not sent_files:
+            await update.message.reply_text(
+                "❌ No exam tips available at the moment. Please try again later.",
+                reply_markup=Keyboards.main_menu()
+            )
+            return
+            
+        # Count successful and failed sends
+        sent_count = sum(1 for f in sent_files if f.get('success'))
+        failed_count = len(sent_files) - sent_count
+        
+        # Only send a message if there was an issue with some files
+        if failed_count > 0:
+            await update.message.reply_text(
+                f"⚠️ {failed_count} exam tip file{'s' if failed_count != 1 else ''} failed to send. "
+                f"{sent_count} file{'s' if sent_count != 1 else ''} sent successfully.",
+                reply_markup=Keyboards.main_menu()
+            )
+        
+        logger.info(f"Sent {sent_count} exam tips to user {user.id}.")
+        
+    except Exception as e:
+        logger.error(f"Error in handle_exam_tips for user {user.id}: {e}", exc_info=True)
+        await update.message.reply_text(
+            "❌ An error occurred while sending exam tips. Please try again later.",
+            reply_markup=Keyboards.main_menu()
+        )
 
 
 async def handle_study_tips(update: Update, context: ContextTypes.DEFAULT_TYPE):
