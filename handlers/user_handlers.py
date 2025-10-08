@@ -27,7 +27,7 @@ ASSIGNMENT_HELP_DESCRIPTION = (
     "• Subject-specific study techniques\n"
     "• Exam preparation tips and best practices\n"
     "• Concept clarification and learning support\n\n"
-    "For professional academic assistance, please contact our support team at @WAGM12345\n\n"
+    "For professional academic assistance, please contact our support team at @WAGMI12345\n\n"
     "Let us help you achieve your academic goals! 🎯"
 )
 
