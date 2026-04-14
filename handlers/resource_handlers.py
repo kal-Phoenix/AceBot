@@ -1,16 +1,18 @@
 # handlers/resource_handlers.py
 import logging
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from database.models import User
-from services.google_drive import GoogleDriveService
+from services.telegram_channel import TelegramChannelService
 from config import Config
 from keyboards import Keyboards
 from handlers import user_handlers # For calling start() on error
 
 logger = logging.getLogger(__name__)
-drive_service = GoogleDriveService()
 PREMIUM_MESSAGE = "This feature is for premium users only. Please upgrade to access this content. Tap '💎 Upgrade' from the main menu to learn more!"
+
+# Initialize Telegram Channel service
+channel_service = TelegramChannelService()
 
 async def handle_resources(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Displays the resources menu."""
@@ -36,7 +38,6 @@ async def handle_resource_selection(update: Update, context: ContextTypes.DEFAUL
         return
 
     # Route to specific handlers based on resource type
-    # NOTE: "📖 Text Books" is now handled in handle_message for consistency.
     if text == "📚 Teacher's Guide":
         await update.message.reply_text(
             "Select grade level for Teacher's Guide:",
@@ -56,7 +57,6 @@ async def handle_resource_selection(update: Update, context: ContextTypes.DEFAUL
         await user_handlers.start(update, context)  # Go back to main menu
         logger.info(f"User {user.id} navigated back to main menu from resources.")
     else:
-        # This else block should ideally not be hit if main.py routing is correct.
         await update.message.reply_text("Invalid resource type selected.")
         logger.warning(f"User {user.id} sent invalid resource type to handle_resource_selection: {text}")
 
@@ -81,7 +81,7 @@ async def handle_grade_selection(update: Update, context: ContextTypes.DEFAULT_T
     user = update.effective_user
     db_user = User.find(user.id)
     text = update.message.text
-    logger.info(f"handle_grade_selection received text: '{text}' for user {user.id}")  # DEBUG LOG
+    logger.info(f"handle_grade_selection received text: '{text}' for user {user.id}")
 
     if not db_user or not db_user.stream:
         await user_handlers.start(update, context)
@@ -90,42 +90,109 @@ async def handle_grade_selection(update: Update, context: ContextTypes.DEFAULT_T
 
     # Determine resource type based on button text
     if "Textbooks" in text:
-        resource_type = "textbooks"
+        resource_type = "textbook"
         display_name = "Textbooks"
     elif "Guide" in text:
-        resource_type = "teachers_guide"
+        resource_type = "guide"
         display_name = "Teacher's Guides"
     else:
-        # This should ideally not be hit if the MessageHandler in main.py is correct.
         await update.message.reply_text("Invalid selection. Please choose a valid grade button.")
         logger.warning(f"User {user.id} sent invalid grade selection format: {text}")
         return
 
     grade = text.split()[1]  # Extract grade number (e.g., "9", "10")
-    # Construct the key for Config.DRIVE_FOLDER_IDS
-    folder_id_key = f"{db_user.stream}_grade{grade}_{resource_type}"
-    folder_id = Config.DRIVE_FOLDER_IDS.get(folder_id_key)
+    
+    # Store grade and resource type for curriculum selection
+    context.user_data['selected_grade'] = grade
+    context.user_data['selected_resource_type'] = resource_type
+    context.user_data['display_name'] = display_name
+    
+    # Show curriculum selection menu
+    await update.message.reply_text(
+        f"Select curriculum type for Grade {grade} {display_name}:",
+        reply_markup=Keyboards.curriculum_menu(grade, display_name)
+    )
+    logger.info(f"User {user.id} shown curriculum menu for Grade {grade} {display_name}.")
 
-    if not folder_id or folder_id.startswith("YOUR_"):  # Check for placeholder IDs
+async def handle_curriculum_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handles curriculum selection (Old/New) and delivers files."""
+    user = update.effective_user
+    db_user = User.find(user.id)
+    text = update.message.text
+    
+    if not db_user or not db_user.stream:
+        await user_handlers.start(update, context)
+        return
+    
+    # Get stored data from context
+    grade = context.user_data.get('selected_grade')
+    resource_type = context.user_data.get('selected_resource_type')
+    display_name = context.user_data.get('display_name')
+    
+    if not grade or not resource_type:
+        await update.message.reply_text("Something went wrong. Please start over.", reply_markup=Keyboards.resources_menu())
+        return
+    
+    # Determine curriculum type
+    if text == "Old Curriculum":
+        curriculum = "old"
+    elif text == "New Curriculum":
+        curriculum = "new"
+    else:
+        await update.message.reply_text("Please select Old Curriculum or New Curriculum.")
+        return
+    
+    # Send files based on curriculum choice
+    if resource_type == "textbook":
+        sent_files = await channel_service.get_textbooks(context, db_user.stream, f"{grade}_{curriculum}", user.id)
+    elif resource_type == "guide":
+        sent_files = await channel_service.get_teachers_guide(context, db_user.stream, f"{grade}_{curriculum}", user.id)
+    else:
+        sent_files = []
+    
+    # Check if files are configured first
+    content_key = f"{db_user.stream}_{resource_type}_grade{grade}_{curriculum}"
+    configured_files = Config.FILE_IDS.get(content_key, [])
+    
+    if not configured_files:
         await update.message.reply_text(
-            f"Resources not available for {display_name} Grade {grade} ({db_user.stream.capitalize()}) yet. "
-            f"Please ensure the Google Drive folder ID is configured correctly in config.py."
+            f"📄 No {display_name.lower()} configured yet for Grade {grade} {curriculum.capitalize()} Curriculum ({db_user.stream.capitalize()}).\n\n"
+            f"Please contact admin to add these files.",
+            reply_markup=Keyboards.resources_menu()
         )
-        logger.info(f"No valid folder ID found or placeholder used for {folder_id_key} for user {user.id}.")
+        logger.info(f"No file_ids configured for {content_key}")
         return
-
-    files = drive_service.list_files(folder_id)  # Fetch files from Google Drive
-    if not files:
-        await update.message.reply_text(f"No resources available for {display_name} Grade {grade}.")
-        logger.info(f"No files found in folder {folder_id} for user {user.id}.")
+    
+    if not sent_files:
+        await update.message.reply_text(
+            f"📄 {display_name} files have issues (invalid file_ids). Please contact admin to fix the configuration.",
+            reply_markup=Keyboards.resources_menu()
+        )
+        logger.info(f"Service returned empty for configured files: {content_key}")
         return
-
-    message = f"📚 {display_name} for Grade {grade} ({db_user.stream.capitalize()}):\n\n"
-    for file in files:
-        message += f"📄 {file['name']}\n🔗 {file['webViewLink']}\n\n"
-
-    await update.message.reply_text(message, reply_markup=Keyboards.resources_menu())
-    logger.info(f"User {user.id} received {display_name} for Grade {grade}.")
+    
+    # Send confirmation message
+    sent_count = len([file for file in sent_files if file.get('sent')])
+    failed_count = len([file for file in sent_files if not file.get('sent')])
+    
+    if sent_count > 0:
+        await update.message.reply_text(
+            f"✅ Sent {sent_count} {display_name.lower()} for Grade {grade} {curriculum.capitalize()} Curriculum ({db_user.stream.capitalize()})!\n\n"
+            f"📁 Files have been sent directly to your chat above."
+            + (f"\n\n⚠️ {failed_count} files failed to send." if failed_count > 0 else ""),
+            reply_markup=Keyboards.resources_menu()
+        )
+        logger.info(f"Sent {sent_count} {display_name.lower()} ({curriculum}) to user {user.id}.")
+    else:
+        await update.message.reply_text(
+            f"❌ Failed to send {display_name.lower()}. Please try again or contact support.",
+            reply_markup=Keyboards.resources_menu()
+        )
+    
+    # Clear stored data
+    context.user_data.pop('selected_grade', None)
+    context.user_data.pop('selected_resource_type', None)
+    context.user_data.pop('display_name', None)
 
 async def handle_short_notes(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Prompts the user to select a subject for short notes."""
@@ -156,13 +223,24 @@ async def handle_short_notes(update: Update, context: ContextTypes.DEFAULT_TYPE)
 async def _process_notes_subject_selection(update: Update, context: ContextTypes.DEFAULT_TYPE, db_user: User,
                                            subject_text: str):
     """Processes the selected subject for short notes and provides links."""
-    # PREMIUM CHECK for Short Notes (redundant if handle_short_notes already checks, but safe)
+    # PREMIUM CHECK for Short Notes - Block access entirely for non-premium users
     if not db_user.is_premium:
-        await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())
-        logger.info(f"Non-premium user {db_user.user_id} attempted to process Short Notes selection.")
+        await update.message.reply_text(
+            "✨ *Premium Content* ✨\n\n"
+            "📚 *Short Notes* are exclusive to our premium members!\n\n"
+            "🎯 *What you'll get:*\n"
+            "• Comprehensive study notes\n"
+            "• Subject-specific materials\n"
+            "• High-quality content\n\n"
+            "💎 *Upgrade to Premium* to unlock this content and much more!\n\n"
+            "🚀 Ready to boost your studies?",
+            parse_mode='Markdown',
+            reply_markup=Keyboards.main_menu()
+        )
+        logger.info(f"Non-premium user {db_user.user_id} attempted to access Short Notes.")
         return
 
-    # Map display names to internal keys for folder IDs
+    # Map display names to internal keys
     subject_map = {
         "mathematics": "math",
         "english": "english",
@@ -175,36 +253,54 @@ async def _process_notes_subject_selection(update: Update, context: ContextTypes
         "economics": "economics"
     }
 
-    subject_key = subject_map.get(subject_text.lower())  # Ensure lower case for mapping
+    subject_key = subject_map.get(subject_text.lower())
     if not subject_key:
         await update.message.reply_text("Invalid subject selected for notes.")
         logger.warning(f"User {db_user.user_id} sent invalid notes subject: {subject_text}")
         return
 
-    # Construct the key for Config.DRIVE_FOLDER_IDS
-    folder_key = f"{db_user.stream}_{subject_key}_notes"
-    folder_id = Config.DRIVE_FOLDER_IDS.get(folder_key)
-
-    if not folder_id or folder_id.startswith("YOUR_"):  # Check for placeholder IDs
+    # Check if files are configured first
+    content_key = f"{db_user.stream}_notes_{subject_key}"
+    configured_files = Config.FILE_IDS.get(content_key, [])
+    
+    if not configured_files:
         await update.message.reply_text(
-            f"Notes not available for {subject_text.capitalize()} yet. "
-            f"Please ensure the Google Drive folder ID is configured correctly in config.py."
+            f"📄 No {subject_text.capitalize()} notes configured yet for {db_user.stream.capitalize()} stream.\n\n"
+            f"Please contact admin to add these files.",
+            reply_markup=Keyboards.resources_menu()
         )
-        logger.info(f"No valid folder ID found or placeholder used for {folder_key} for user {db_user.user_id}.")
+        logger.info(f"No file_ids configured for {content_key}")
         return
-
-    files = drive_service.list_files(folder_id)
-    if not files:
-        await update.message.reply_text("No notes available for this subject.")
-        logger.info(f"No files found in folder {folder_id} for user {db_user.user_id}.")
+    
+    # Forward files directly from private channel to user
+    forwarded_content = await channel_service.get_notes(context, db_user.stream, subject_key, db_user.user_id)
+    
+    if not forwarded_content:
+        await update.message.reply_text(
+            f"📄 {subject_text.capitalize()} notes files have issues (invalid file_ids). Please contact admin to fix the configuration.",
+            reply_markup=Keyboards.resources_menu()
+        )
+        logger.info(f"Service returned empty for configured files: {content_key}")
         return
-
-    message = f"📝 {subject_text.capitalize()} Notes ({db_user.stream.capitalize()}):\n\n"
-    for file in files:
-        message += f"📄 {file['name']}\n🔗 {file['webViewLink']}\n\n"
-
-    await update.message.reply_text(message, reply_markup=Keyboards.resources_menu())
-    logger.info(f"User {db_user.user_id} received notes for {subject_text}.")
+    
+    # Send confirmation message after sending files
+    sent_count = len([file for file in forwarded_content if file.get('sent')])
+    failed_count = len([file for file in forwarded_content if not file.get('sent')])
+    
+    if sent_count > 0:
+        await update.message.reply_text(
+            f"✅ Sent {sent_count} short notes for {subject_text.capitalize()} ({db_user.stream.capitalize()})!\n\n"
+            f"📁 Files have been sent directly to your chat above. You can download, view, or share them as needed."
+            + (f"\n\n⚠️ {failed_count} files failed to send." if failed_count > 0 else ""),
+            reply_markup=Keyboards.resources_menu()
+        )
+        logger.info(f"Sent {sent_count} notes to user {db_user.user_id}.")
+    else:
+        await update.message.reply_text(
+            f"❌ Failed to send short notes. Please try again or contact support.",
+            reply_markup=Keyboards.resources_menu()
+        )
+    logger.info(f"User {db_user.user_id} accessed short notes for {subject_text}.")
 
 async def handle_cheat_sheets(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Prompts the user to select a cheat sheet type."""
@@ -216,10 +312,21 @@ async def handle_cheat_sheets(update: Update, context: ContextTypes.DEFAULT_TYPE
         logger.warning(f"User {user.id} inconsistent state, restarting flow for cheat sheets.")
         return
 
-    # PREMIUM CHECK for Cheat Sheets (redundant if handle_resource_selection already checks, but safe)
+    # PREMIUM CHECK for Cheat Sheets - Block access entirely for non-premium users
     if not db_user.is_premium:
-        await update.message.reply_text(PREMIUM_MESSAGE, reply_markup=Keyboards.main_menu())
-        logger.info(f"Non-premium user {user.id} attempted to access Cheat Sheets directly.")
+        await update.message.reply_text(
+            "✨ *Premium Content* ✨\n\n"
+            "🧮 *Cheat Sheets* are exclusive to our premium members!\n\n"
+            "🎯 *What you'll get:*\n"
+            "• Quick reference guides\n"
+            "• Formula collections\n"
+            "• Study shortcuts\n\n"
+            "💎 *Upgrade to Premium* to unlock this content and much more!\n\n"
+            "🚀 Ready to boost your studies?",
+            parse_mode='Markdown',
+            reply_markup=Keyboards.main_menu()
+        )
+        logger.info(f"Non-premium user {user.id} attempted to access Cheat Sheets.")
         return
 
     await update.message.reply_text(
@@ -245,48 +352,64 @@ async def handle_cheat_sheet_selection(update: Update, context: ContextTypes.DEF
         logger.info(f"Non-premium user {user.id} attempted to process Cheat Sheets selection.")
         return
 
-    # Map display names (with emojis) to internal keys for folder IDs
-    subject_map = {
-        "🧮 Math Formulas": "math_cheats",
-        "📝 English Tips": "english_cheats",
-        "⚛ Physics Formulas": "physics_cheats",
-        "🧬 Biology Cheats": "biology_cheats",
-        "🧪 Chemistry Cheats": "chemistry_cheats",
-        "🧠 Aptitude Tricks": "aptitude_cheats",
-        "🗺 Geography Cheats": "geography_cheats",
-        "📜 History Cheats": "history_cheats",
-        "💹 Economics Cheats": "economics_cheats"
+    # Map display names to subject keys
+    subject_key_map = {
+        "🧮 Math Formulas": "math",
+        "📝 English Tips": "english",
+        "⚛ Physics Formulas": "physics",
+        "🧬 Biology Cheats": "biology",
+        "🧪 Chemistry Cheats": "chemistry",
+        "🧠 Aptitude Tricks": "aptitude",
+        "🗺 Geography Cheats": "geography",
+        "📜 History Cheats": "history",
+        "💹 Economics Cheats": "economics"
     }
 
-    # Get the folder key suffix based on the exact input text
-    folder_key_suffix = subject_map.get(text)
-    if not folder_key_suffix:
+    subject_key = subject_key_map.get(text)
+    if not subject_key:
         await update.message.reply_text("Invalid cheat sheet selection.")
         logger.warning(f"User {user.id} sent invalid cheat sheet selection: {text}")
         return
 
-    folder_key = f"{db_user.stream}_{folder_key_suffix}"
-    folder_id = Config.DRIVE_FOLDER_IDS.get(folder_key)
-
-    if not folder_id or folder_id.startswith("YOUR_"):  # Check for placeholder IDs
+    # Check if files are configured first
+    content_key = f"{db_user.stream}_cheats_{subject_key}"
+    configured_files = Config.FILE_IDS.get(content_key, [])
+    
+    if not configured_files:
         await update.message.reply_text(
-            f"Cheat sheets not available for {text.replace('🧮 ', '').replace('📝 ', '').replace('⚛ ', '').replace('🧬 ', '').replace('🧪 ', '').replace('🧠 ', '').replace('🗺 ', '').replace('📜 ', '').replace('💹 ', '')} yet. "
-            f"Please ensure the Google Drive folder ID is configured correctly in config.py."
+            f"📄 No {subject_key.capitalize()} cheat sheets configured yet for {db_user.stream.capitalize()} stream.\n\n"
+            f"Please contact admin to add these files.",
+            reply_markup=Keyboards.resources_menu()
         )
-        logger.info(f"No valid folder ID found or placeholder used for {folder_key} for user {db_user.user_id}.")
+        logger.info(f"No file_ids configured for {content_key}")
         return
-
-    files = drive_service.list_files(folder_id)
-    if not files:
-        await update.message.reply_text("No cheat sheets found.")
-        logger.info(f"No files found in folder {folder_id} for user {db_user.user_id}.")
+    
+    # Forward files directly from private channel to user
+    forwarded_content = await channel_service.get_cheat_sheets(context, db_user.stream, subject_key, user.id)
+    
+    if not forwarded_content:
+        await update.message.reply_text(
+            f"📄 {subject_key.capitalize()} cheat sheets files have issues (invalid file_ids). Please contact admin to fix the configuration.",
+            reply_markup=Keyboards.resources_menu()
+        )
+        logger.info(f"Service returned empty for configured files: {content_key}")
         return
-
-    # Extract the display name by removing the emoji prefix
-    display_name = text.replace('🧮 ', '').replace('📝 ', '').replace('⚛ ', '').replace('🧬 ', '').replace('🧪 ', '').replace('🧠 ', '').replace('🗺 ', '').replace('📜 ', '').replace('💹 ', '')
-    message = f"📚 {display_name}:\n\n"
-    for file in files:
-        message += f"📄 {file['name']}\n🔗 {file['webViewLink']}\n\n"
-
-    await update.message.reply_text(message, reply_markup=Keyboards.resources_menu())
-    logger.info(f"User {user.id} received cheat sheets for {display_name}.")
+    
+    # Send confirmation message after sending files
+    sent_count = len([file for file in forwarded_content if file.get('sent')])
+    failed_count = len([file for file in forwarded_content if not file.get('sent')])
+    
+    if sent_count > 0:
+        await update.message.reply_text(
+            f"✅ Sent {sent_count} cheat sheets for {subject_key.capitalize()} ({db_user.stream.capitalize()})!\n\n"
+            f"📁 Files have been sent directly to your chat above. You can download, view, or share them as needed."
+            + (f"\n\n⚠️ {failed_count} files failed to send." if failed_count > 0 else ""),
+            reply_markup=Keyboards.resources_menu()
+        )
+        logger.info(f"Sent {sent_count} cheat sheets to user {user.id}.")
+    else:
+        await update.message.reply_text(
+            f"❌ Failed to send cheat sheets. Please try again or contact support.",
+            reply_markup=Keyboards.resources_menu()
+        )
+    logger.info(f"User {user.id} accessed cheat sheets for {subject_key}.")
